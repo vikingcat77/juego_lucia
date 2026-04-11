@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>juego_Lucia | Block Puzzle</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game-shell">
+    <section class="intro-panel">
+      <p class="eyebrow">juego_Lucia</p>
+      <h1>Block Puzzle 10x10</h1>
+      <p class="intro">
+        Arrastra una pieza al tablero. Cuando completes una fila o una columna,
+        se borrara y sumaras puntos.
+      </p>
+
+      <div class="stats">
+        <article class="stat-card">
+          <span class="stat-label">Puntos</span>
+          <strong id="score">0</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">Mejor</span>
+          <strong id="bestScore">0</strong>
+        </article>
+      </div>
+
+      <div class="controls">
+        <button id="restartButton" type="button">Nueva partida</button>
+      </div>
+
+      <ul class="tips">
+        <li>Completa filas o columnas para limpiar espacio.</li>
+        <li>Cuando gastes las 3 piezas, apareceran otras nuevas.</li>
+        <li>La partida termina si ninguna pieza cabe en el tablero.</li>
+      </ul>
+    </section>
+
+    <section class="board-panel">
+      <div id="board" class="board" aria-label="Tablero de juego"></div>
+      <div class="status-bar">
+        <p id="status">Coge una pieza para empezar.</p>
+      </div>
+      <div id="tray" class="tray" aria-label="Piezas disponibles"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
