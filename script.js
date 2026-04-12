@@ -1,27 +1,24 @@
 const GRID_SIZE = 10;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
+const PIECE_THEMES = [
+  { filledStart: "#f97316", filledEnd: "#fb923c", pieceStart: "#f97316", pieceEnd: "#facc15" },
+  { filledStart: "#0f766e", filledEnd: "#14b8a6", pieceStart: "#14b8a6", pieceEnd: "#67e8f9" },
+  { filledStart: "#7c3aed", filledEnd: "#a855f7", pieceStart: "#8b5cf6", pieceEnd: "#f0abfc" },
+  { filledStart: "#be123c", filledEnd: "#f43f5e", pieceStart: "#e11d48", pieceEnd: "#fda4af" }
+];
 
-const SHAPES = [
+const BASE_SHAPES = [
   [[1]],
   [[1, 1]],
-  [[1], [1]],
   [[1, 1, 1]],
-  [[1], [1], [1]],
   [[1, 1], [1, 1]],
   [[1, 0], [1, 1]],
-  [[0, 1], [1, 1]],
-  [[1, 1], [0, 1]],
-  [[1, 1], [1, 0]],
   [[1, 1, 1], [0, 1, 0]],
-  [[0, 1, 0], [1, 1, 1]],
   [[1, 1, 1, 1]],
-  [[1], [1], [1], [1]],
   [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]],
   [[1, 1, 1], [1, 1, 1]],
   [[1, 1], [1, 0], [1, 0]],
-  [[1, 1], [0, 1], [0, 1]],
-  [[1, 1, 0], [0, 1, 1]],
-  [[0, 1, 1], [1, 1, 0]]
+  [[1, 1, 0], [0, 1, 1]]
 ];
 
 const boardEl = document.getElementById("board");
@@ -38,6 +35,7 @@ let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
 let previewCells = [];
 let previewTargetCell = null;
 let dragState = null;
+let activeThemeIndex = 0;
 
 bestScoreEl.textContent = String(bestScore);
 
@@ -50,6 +48,8 @@ function startGame() {
   previewCells = [];
   previewTargetCell = null;
   dragState = null;
+  activeThemeIndex = 0;
+  applyPieceTheme();
   document.body.classList.remove("game-over");
   boardEl.innerHTML = "";
   renderBoard();
@@ -114,7 +114,7 @@ function refillTray() {
   while (pieces.length < 3) {
     pieces.push({
       id: crypto.randomUUID(),
-      shape: structuredClone(SHAPES[Math.floor(Math.random() * SHAPES.length)])
+      shape: getRandomShape()
     });
   }
 
@@ -353,6 +353,7 @@ function applyPlacement(pieceId, row, col) {
 
   pieces = pieces.filter((item) => item.id !== pieceId);
   const linesCleared = clearCompletedLines();
+  const themeChanged = updateThemeAfterClear(linesCleared);
   renderBoard();
   renderTray();
 
@@ -360,7 +361,9 @@ function applyPlacement(pieceId, row, col) {
   const bonusPoints = linesCleared * 50;
   updateScore(placementPoints + bonusPoints);
 
-  if (linesCleared > 0) {
+  if (themeChanged) {
+    setStatus("Increible: 4 lineas a la vez. Las fichas han cambiado de color.");
+  } else if (linesCleared > 0) {
     setStatus(`Buen movimiento. Has limpiado ${linesCleared} linea(s).`);
   } else {
     setStatus("Pieza colocada. Sigue buscando huecos utiles.");
@@ -372,6 +375,62 @@ function applyPlacement(pieceId, row, col) {
   } else {
     evaluateGameState();
   }
+}
+
+function getRandomShape() {
+  const baseShape = BASE_SHAPES[Math.floor(Math.random() * BASE_SHAPES.length)];
+  const rotations = getUniqueRotations(baseShape);
+  const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
+  return structuredClone(randomRotation);
+}
+
+function getUniqueRotations(shape) {
+  const rotations = [];
+  const seen = new Set();
+  let current = shape;
+
+  for (let index = 0; index < 4; index += 1) {
+    const key = JSON.stringify(current);
+    if (!seen.has(key)) {
+      seen.add(key);
+      rotations.push(current);
+    }
+    current = rotateShape(current);
+  }
+
+  return rotations;
+}
+
+function rotateShape(shape) {
+  const rows = shape.length;
+  const cols = shape[0].length;
+  const rotated = Array.from({ length: cols }, () => Array(rows).fill(0));
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let col = 0; col < cols; col += 1) {
+      rotated[col][rows - row - 1] = shape[row][col];
+    }
+  }
+
+  return rotated;
+}
+
+function updateThemeAfterClear(linesCleared) {
+  if (linesCleared < 4) {
+    return false;
+  }
+
+  activeThemeIndex = (activeThemeIndex + 1) % PIECE_THEMES.length;
+  applyPieceTheme();
+  return true;
+}
+
+function applyPieceTheme() {
+  const theme = PIECE_THEMES[activeThemeIndex];
+  document.documentElement.style.setProperty("--filled-start", theme.filledStart);
+  document.documentElement.style.setProperty("--filled-end", theme.filledEnd);
+  document.documentElement.style.setProperty("--piece-start", theme.pieceStart);
+  document.documentElement.style.setProperty("--piece-end", theme.pieceEnd);
 }
 
 function clearCompletedLines() {

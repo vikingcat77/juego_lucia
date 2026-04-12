@@ -9,6 +9,10 @@
   --muted: #8c6239;
   --accent: #ea580c;
   --accent-2: #f59e0b;
+  --filled-start: #f97316;
+  --filled-end: #fb923c;
+  --piece-start: #f97316;
+  --piece-end: #facc15;
   --cell: 34px;
   --gap: 4px;
   --shadow: 0 28px 70px rgba(154, 52, 18, 0.18);
@@ -157,7 +161,7 @@ button:hover {
 }
 
 .cell.filled {
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: linear-gradient(135deg, var(--filled-start), var(--filled-end));
   border-color: rgba(194, 65, 12, 0.6);
 }
 
@@ -228,7 +232,7 @@ button:hover {
 }
 
 .piece-cell.on {
-  background: linear-gradient(135deg, #f97316, #facc15);
+  background: linear-gradient(135deg, var(--piece-start), var(--piece-end));
   box-shadow: inset 0 -2px 0 rgba(120, 53, 15, 0.16);
 }
 
