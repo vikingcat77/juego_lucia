@@ -16,6 +16,10 @@ const SHAPES = [
   [[0, 1, 0], [1, 1, 1]],
   [[1, 1, 1, 1]],
   [[1], [1], [1], [1]],
+  [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]],
+  [[1, 1, 1], [1, 1, 1]],
+  [[1, 1], [1, 0], [1, 0]],
+  [[1, 1], [0, 1], [0, 1]],
   [[1, 1, 0], [0, 1, 1]],
   [[0, 1, 1], [1, 1, 0]]
 ];
@@ -32,6 +36,7 @@ let pieces = [];
 let score = 0;
 let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
 let previewCells = [];
+let previewTargetCell = null;
 let dragState = null;
 
 bestScoreEl.textContent = String(bestScore);
@@ -43,6 +48,7 @@ function startGame() {
   pieces = [];
   score = 0;
   previewCells = [];
+  previewTargetCell = null;
   dragState = null;
   document.body.classList.remove("game-over");
   boardEl.innerHTML = "";
@@ -139,7 +145,15 @@ function beginDrag(event, pieceId) {
 
   const sourceEl = event.currentTarget;
   const proxy = buildProxy(piece.shape);
-  dragState = { piece, sourceEl, proxy };
+  const proxyWidth = piece.shape[0].length * 24 + (piece.shape[0].length - 1) * 4;
+  const proxyHeight = piece.shape.length * 24 + (piece.shape.length - 1) * 4;
+  dragState = {
+    piece,
+    sourceEl,
+    proxy,
+    offsetX: proxyWidth / 2,
+    offsetY: proxyHeight + 18
+  };
   sourceEl.classList.add("dragging");
   document.body.appendChild(proxy);
   moveProxy(event.clientX, event.clientY);
@@ -216,7 +230,9 @@ function moveProxy(clientX, clientY) {
     return;
   }
 
-  dragState.proxy.style.transform = `translate(${clientX + 16}px, ${clientY + 16}px)`;
+  const x = clientX - dragState.offsetX;
+  const y = clientY - dragState.offsetY;
+  dragState.proxy.style.transform = `translate(${x}px, ${y}px)`;
 }
 
 function updatePreview(clientX, clientY) {
@@ -233,6 +249,11 @@ function updatePreview(clientX, clientY) {
 
   const valid = canPlaceShape(dragState.piece.shape, placement.row, placement.col);
   const className = valid ? "preview-valid" : "preview-invalid";
+  previewTargetCell = getCell(placement.row, placement.col);
+
+  if (previewTargetCell) {
+    previewTargetCell.classList.add("preview-target", className);
+  }
 
   for (let row = 0; row < dragState.piece.shape.length; row += 1) {
     for (let col = 0; col < dragState.piece.shape[0].length; col += 1) {
@@ -261,6 +282,11 @@ function clearPreview() {
     cell.classList.remove("preview-valid", "preview-invalid");
   });
   previewCells = [];
+
+  if (previewTargetCell) {
+    previewTargetCell.classList.remove("preview-target", "preview-valid", "preview-invalid");
+    previewTargetCell = null;
+  }
 }
 
 function getPlacementFromPoint(clientX, clientY, shape) {
