@@ -33,7 +33,6 @@ let pieces = [];
 let score = 0;
 let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
 let previewCells = [];
-let previewTargetCell = null;
 let dragState = null;
 let activeThemeIndex = 0;
 
@@ -46,7 +45,6 @@ function startGame() {
   pieces = [];
   score = 0;
   previewCells = [];
-  previewTargetCell = null;
   dragState = null;
   activeThemeIndex = 0;
   applyPieceTheme();
@@ -151,8 +149,10 @@ function beginDrag(event, pieceId) {
     piece,
     sourceEl,
     proxy,
+    proxyWidth,
+    proxyHeight,
     offsetX: proxyWidth / 2,
-    offsetY: proxyHeight + 18
+    offsetY: proxyHeight + 54
   };
   sourceEl.classList.add("dragging");
   document.body.appendChild(proxy);
@@ -195,9 +195,10 @@ function onPointerUp(event) {
     return;
   }
 
+  const dropPoint = getBoardPointFromPointer(event.clientX, event.clientY);
   const placement = getPlacementFromPoint(
-    event.clientX,
-    event.clientY,
+    dropPoint.x,
+    dropPoint.y,
     dragState.piece.shape
   );
 
@@ -242,18 +243,14 @@ function updatePreview(clientX, clientY) {
     return;
   }
 
-  const placement = getPlacementFromPoint(clientX, clientY, dragState.piece.shape);
+  const boardPoint = getBoardPointFromPointer(clientX, clientY);
+  const placement = getPlacementFromPoint(boardPoint.x, boardPoint.y, dragState.piece.shape);
   if (!placement) {
     return;
   }
 
   const valid = canPlaceShape(dragState.piece.shape, placement.row, placement.col);
   const className = valid ? "preview-valid" : "preview-invalid";
-  previewTargetCell = getCell(placement.row, placement.col);
-
-  if (previewTargetCell) {
-    previewTargetCell.classList.add("preview-target", className);
-  }
 
   for (let row = 0; row < dragState.piece.shape.length; row += 1) {
     for (let col = 0; col < dragState.piece.shape[0].length; col += 1) {
@@ -277,16 +274,25 @@ function updatePreview(clientX, clientY) {
   }
 }
 
+function getBoardPointFromPointer(clientX, clientY) {
+  if (!dragState) {
+    return { x: clientX, y: clientY };
+  }
+
+  const proxyX = clientX - dragState.offsetX;
+  const proxyY = clientY - dragState.offsetY;
+
+  return {
+    x: proxyX + dragState.proxyWidth / 2,
+    y: proxyY + dragState.proxyHeight / 2
+  };
+}
+
 function clearPreview() {
   previewCells.forEach((cell) => {
     cell.classList.remove("preview-valid", "preview-invalid");
   });
   previewCells = [];
-
-  if (previewTargetCell) {
-    previewTargetCell.classList.remove("preview-target", "preview-valid", "preview-invalid");
-    previewTargetCell = null;
-  }
 }
 
 function getPlacementFromPoint(clientX, clientY, shape) {
