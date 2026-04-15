@@ -1,4 +1,4 @@
-# juego_Lucia
+# Gatitos y Cajitas
 
 Juego web tipo `Block Puzzle` / `TenTrix`.
 

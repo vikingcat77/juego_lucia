@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Gatitos manga encima de cajitas">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fff7ed"/>
+      <stop offset="100%" stop-color="#ffedd5"/>
+    </linearGradient>
+    <pattern id="screen" width="8" height="8" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#94a3b8"/>
+    </pattern>
+    <g id="box" stroke="#334155" stroke-width="6" stroke-linejoin="round">
+      <path d="M0 50L100 10L210 40L110 82Z" fill="#fcd34d"/>
+      <path d="M0 50V145L110 188V82Z" fill="#f59e0b"/>
+      <path d="M110 82V188L210 145V40Z" fill="#fb923c"/>
+      <path d="M110 82V188" fill="none"/>
+    </g>
+    <g id="cat" stroke="#0f172a" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M44 74L66 30L82 72" fill="#fff"/>
+      <path d="M154 74L132 30L116 72" fill="#fff"/>
+      <ellipse cx="99" cy="120" rx="64" ry="50" fill="#fff"/>
+      <path d="M70 120q12-14 24 0" fill="none"/>
+      <path d="M106 120q12-14 24 0" fill="none"/>
+      <path d="M92 140q7 8 14 0" fill="none"/>
+      <path d="M80 152q20 16 38 0" fill="none"/>
+      <path d="M56 135H34M56 147H34M142 135h22M142 147h22" fill="none"/>
+    </g>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect width="1600" height="900" fill="url(#screen)" opacity="0.16"/>
+
+  <g opacity="0.78" transform="translate(130 560) scale(1.2)">
+    <use href="#box"/>
+    <g transform="translate(10 -145)"><use href="#cat"/></g>
+  </g>
+  <g opacity="0.74" transform="translate(480 520) scale(1.1)">
+    <use href="#box"/>
+    <g transform="translate(8 -140)"><use href="#cat"/></g>
+  </g>
+  <g opacity="0.72" transform="translate(820 570) scale(1.25)">
+    <use href="#box"/>
+    <g transform="translate(10 -148)"><use href="#cat"/></g>
+  </g>
+  <g opacity="0.7" transform="translate(1180 520) scale(1.08)">
+    <use href="#box"/>
+    <g transform="translate(8 -138)"><use href="#cat"/></g>
+  </g>
+
+  <path d="M100 190q120-95 240 0" stroke="#334155" stroke-width="6" fill="none" opacity="0.55"/>
+  <path d="M1280 170q100-84 206 0" stroke="#334155" stroke-width="6" fill="none" opacity="0.55"/>
+  <path d="M770 140q80-66 170 0" stroke="#334155" stroke-width="6" fill="none" opacity="0.48"/>
+</svg>

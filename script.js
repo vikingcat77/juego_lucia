@@ -110,6 +110,12 @@ const COMBO_CAT_IMAGES = [
   "assets/cats/manga-cat-2.svg",
   "assets/cats/manga-cat-3.svg"
 ];
+const COMBO_MEOW_LINES = [
+  "MIAU!",
+  "NYA~",
+  "MRRRIAU!",
+  "MIAU MIAU!"
+];
 
 const BASE_SHAPES = [
   [[1, 1]],
@@ -566,7 +572,7 @@ async function applyPlacement(pieceId, row, col) {
     }
 
     if (themeChanged && linesCleared >= 2) {
-      setStatus(`COMBO (${linesCleared})! Nuevo estilo desbloqueado por puntos.`);
+      setStatus(`Combo gatuno (${linesCleared})! Nuevo estilo desbloqueado por puntos.`);
     } else if (themeChanged) {
       setStatus("Has llegado a un nuevo bloque de 1000 puntos. Estilo aleatorio activado.");
     } else if (linesCleared > 0) {
@@ -888,7 +894,8 @@ function showComboBubble(comboSize) {
   document.querySelectorAll(".combo-bubble, .combo-cat").forEach((item) => item.remove());
   const bubble = document.createElement("div");
   bubble.className = "combo-bubble";
-  bubble.textContent = `COMBO (${comboSize})`;
+  const meow = COMBO_MEOW_LINES[Math.floor(Math.random() * COMBO_MEOW_LINES.length)];
+  bubble.textContent = `${meow} x${comboSize}`;
   const cat = document.createElement("img");
   cat.className = "combo-cat";
   cat.alt = "Gatito manga celebrando combo";
@@ -898,10 +905,10 @@ function showComboBubble(comboSize) {
   const panelRect = boardPanelEl.getBoundingClientRect();
   const centerX = boardRect.left - panelRect.left + boardRect.width / 2;
   const centerY = boardRect.top - panelRect.top + boardRect.height / 2;
-  bubble.style.left = `${centerX}px`;
-  bubble.style.top = `${centerY}px`;
-  cat.style.left = `${centerX - 118}px`;
-  cat.style.top = `${centerY + 26}px`;
+  bubble.style.left = `${centerX + 20}px`;
+  bubble.style.top = `${centerY - 8}px`;
+  cat.style.left = `${centerX - 78}px`;
+  cat.style.top = `${centerY + 44}px`;
 
   boardPanelEl.appendChild(cat);
   boardPanelEl.appendChild(bubble);
@@ -1074,7 +1081,7 @@ function evaluateGameState() {
 
   document.body.classList.add("game-over");
   toggleGameOverBanner(true);
-  setStatus("Game Over Lucía");
+  setStatus("Fin de partida en Gatitos y Cajitas");
 }
 
 function canFitAnywhere(shape) {
@@ -1113,7 +1120,7 @@ function toggleGameOverBanner(show) {
   if (!banner) {
     banner = document.createElement("div");
     banner.className = "game-over-banner";
-    banner.textContent = "Game Over Lucía";
+    banner.textContent = "Gatitos y Cajitas";
     boardPanelEl.appendChild(banner);
   }
 }
