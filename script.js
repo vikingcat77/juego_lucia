@@ -1,11 +1,114 @@
 const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const DRAG_POINTER_GAP_Y = 120;
-const PIECE_THEMES = [
-  { filledStart: "#f97316", filledEnd: "#fb923c", pieceStart: "#f97316", pieceEnd: "#facc15" },
-  { filledStart: "#0f766e", filledEnd: "#14b8a6", pieceStart: "#14b8a6", pieceEnd: "#67e8f9" },
-  { filledStart: "#7c3aed", filledEnd: "#a855f7", pieceStart: "#8b5cf6", pieceEnd: "#f0abfc" },
-  { filledStart: "#be123c", filledEnd: "#f43f5e", pieceStart: "#e11d48", pieceEnd: "#fda4af" }
+const VISUAL_THEMES = [
+  {
+    bgTop: "#fef3c7",
+    bgBottom: "#fed7aa",
+    panel: "rgba(255, 251, 235, 0.92)",
+    panelStrong: "#fff7ed",
+    line: "rgba(146, 64, 14, 0.14)",
+    text: "#3f2a1d",
+    muted: "#8c6239",
+    accent: "#ea580c",
+    accent2: "#f59e0b",
+    filledBorder: "rgba(194, 65, 12, 0.6)",
+    previewRing: "rgba(234, 88, 12, 0.36)",
+    filledStart: "#f97316",
+    filledEnd: "#fb923c",
+    pieceStart: "#f97316",
+    pieceEnd: "#facc15"
+  },
+  {
+    bgTop: "#e0f2fe",
+    bgBottom: "#bae6fd",
+    panel: "rgba(239, 246, 255, 0.92)",
+    panelStrong: "#f0f9ff",
+    line: "rgba(12, 74, 110, 0.14)",
+    text: "#0c2a3d",
+    muted: "#2f637f",
+    accent: "#0284c7",
+    accent2: "#06b6d4",
+    filledBorder: "rgba(3, 105, 161, 0.58)",
+    previewRing: "rgba(2, 132, 199, 0.34)",
+    filledStart: "#0891b2",
+    filledEnd: "#22d3ee",
+    pieceStart: "#0ea5e9",
+    pieceEnd: "#67e8f9"
+  },
+  {
+    bgTop: "#ede9fe",
+    bgBottom: "#ddd6fe",
+    panel: "rgba(245, 243, 255, 0.92)",
+    panelStrong: "#f5f3ff",
+    line: "rgba(76, 29, 149, 0.14)",
+    text: "#2f1e56",
+    muted: "#664aa5",
+    accent: "#7c3aed",
+    accent2: "#a855f7",
+    filledBorder: "rgba(91, 33, 182, 0.58)",
+    previewRing: "rgba(124, 58, 237, 0.34)",
+    filledStart: "#7c3aed",
+    filledEnd: "#a855f7",
+    pieceStart: "#8b5cf6",
+    pieceEnd: "#c4b5fd"
+  },
+  {
+    bgTop: "#fee2e2",
+    bgBottom: "#fecaca",
+    panel: "rgba(255, 241, 242, 0.92)",
+    panelStrong: "#fff1f2",
+    line: "rgba(127, 29, 29, 0.15)",
+    text: "#4a1f1f",
+    muted: "#8f4444",
+    accent: "#dc2626",
+    accent2: "#f43f5e",
+    filledBorder: "rgba(185, 28, 28, 0.58)",
+    previewRing: "rgba(220, 38, 38, 0.34)",
+    filledStart: "#e11d48",
+    filledEnd: "#fb7185",
+    pieceStart: "#f43f5e",
+    pieceEnd: "#fda4af"
+  },
+  {
+    bgTop: "#dcfce7",
+    bgBottom: "#bbf7d0",
+    panel: "rgba(240, 253, 244, 0.92)",
+    panelStrong: "#f0fdf4",
+    line: "rgba(20, 83, 45, 0.14)",
+    text: "#1e3a2a",
+    muted: "#3f6d52",
+    accent: "#16a34a",
+    accent2: "#22c55e",
+    filledBorder: "rgba(21, 128, 61, 0.58)",
+    previewRing: "rgba(22, 163, 74, 0.34)",
+    filledStart: "#059669",
+    filledEnd: "#34d399",
+    pieceStart: "#10b981",
+    pieceEnd: "#86efac"
+  },
+  {
+    bgTop: "#ffedd5",
+    bgBottom: "#fde68a",
+    panel: "rgba(255, 247, 237, 0.92)",
+    panelStrong: "#fffbeb",
+    line: "rgba(124, 45, 18, 0.14)",
+    text: "#422006",
+    muted: "#8f4b2b",
+    accent: "#ea580c",
+    accent2: "#f59e0b",
+    filledBorder: "rgba(194, 65, 12, 0.58)",
+    previewRing: "rgba(234, 88, 12, 0.34)",
+    filledStart: "#ea580c",
+    filledEnd: "#fb923c",
+    pieceStart: "#f97316",
+    pieceEnd: "#fcd34d"
+  }
+];
+const COMBO_CAT_IMAGES = [
+  "assets/cats/manga-cat-1.svg",
+  "assets/cats/manga-cat-2.svg",
+  "assets/cats/manga-cat-3.svg"
 ];
 
 const BASE_SHAPES = [
@@ -43,6 +146,7 @@ let pieces = [];
 let score = 0;
 let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
 let previewCells = [];
+let previewLineCells = [];
 let dragState = null;
 let activeThemeIndex = 0;
 let nextThemeSwapScore = 1000;
@@ -59,13 +163,14 @@ function startGame() {
   pieces = [];
   score = 0;
   previewCells = [];
+  previewLineCells = [];
   dragState = null;
   activeThemeIndex = 0;
   nextThemeSwapScore = 1000;
   isResolvingMove = false;
-  applyPieceTheme();
+  applyVisualTheme();
   document.body.classList.remove("game-over");
-  document.querySelectorAll(".combo-bubble").forEach((bubble) => bubble.remove());
+  document.querySelectorAll(".combo-bubble, .combo-cat").forEach((item) => item.remove());
   document.querySelectorAll(".pow-particle, .pow-text, .pow-ring, .pow-smoke, .pow-confetti, .drag-trail").forEach((item) => item.remove());
   toggleGameOverBanner(false);
   resetBoardFx();
@@ -149,7 +254,7 @@ function updateScore(points) {
 
   let themeChanged = false;
   while (score >= nextThemeSwapScore) {
-    randomizePieceTheme();
+    randomizeVisualTheme();
     nextThemeSwapScore += 1000;
     themeChanged = true;
   }
@@ -306,6 +411,15 @@ function updatePreview(clientX, clientY) {
       }
     }
   }
+
+  if (valid) {
+    const predictedLines = getCompletedLinesForPlacement(
+      dragState.piece.shape,
+      placement.row,
+      placement.col
+    );
+    showLineClearPreview(predictedLines);
+  }
 }
 
 function getBoardPointFromPointer(clientX, clientY) {
@@ -327,6 +441,36 @@ function clearPreview() {
     cell.classList.remove("preview-valid", "preview-invalid");
   });
   previewCells = [];
+
+  previewLineCells.forEach((cell) => {
+    cell.classList.remove("preview-target");
+  });
+  previewLineCells = [];
+}
+
+function showLineClearPreview({ fullRows, fullCols }) {
+  const lineMap = new Map();
+
+  fullRows.forEach((row) => {
+    for (let col = 0; col < GRID_SIZE; col += 1) {
+      lineMap.set(`${row}-${col}`, { row, col });
+    }
+  });
+
+  fullCols.forEach((col) => {
+    for (let row = 0; row < GRID_SIZE; row += 1) {
+      lineMap.set(`${row}-${col}`, { row, col });
+    }
+  });
+
+  lineMap.forEach(({ row, col }) => {
+    const cell = getCell(row, col);
+    if (!cell) {
+      return;
+    }
+    cell.classList.add("preview-target");
+    previewLineCells.push(cell);
+  });
 }
 
 function getPlacementFromPoint(clientX, clientY, shape) {
@@ -422,9 +566,9 @@ async function applyPlacement(pieceId, row, col) {
     }
 
     if (themeChanged && linesCleared >= 2) {
-      setStatus(`COMBO (${linesCleared})! Nuevo color desbloqueado por puntos.`);
+      setStatus(`COMBO (${linesCleared})! Nuevo estilo desbloqueado por puntos.`);
     } else if (themeChanged) {
-      setStatus("Has llegado a un nuevo bloque de 1000 puntos. Color aleatorio activado.");
+      setStatus("Has llegado a un nuevo bloque de 1000 puntos. Estilo aleatorio activado.");
     } else if (linesCleared > 0) {
       setStatus(`Buen movimiento. Has limpiado ${linesCleared} linea(s).`);
     } else {
@@ -480,17 +624,32 @@ function rotateShape(shape) {
   return rotated;
 }
 
-function randomizePieceTheme() {
+function randomizeVisualTheme() {
+  if (VISUAL_THEMES.length <= 1) {
+    return;
+  }
+
   let nextIndex = activeThemeIndex;
   while (nextIndex === activeThemeIndex) {
-    nextIndex = Math.floor(Math.random() * PIECE_THEMES.length);
+    nextIndex = Math.floor(Math.random() * VISUAL_THEMES.length);
   }
   activeThemeIndex = nextIndex;
-  applyPieceTheme();
+  applyVisualTheme();
 }
 
-function applyPieceTheme() {
-  const theme = PIECE_THEMES[activeThemeIndex];
+function applyVisualTheme() {
+  const theme = VISUAL_THEMES[activeThemeIndex];
+  document.documentElement.style.setProperty("--bg-top", theme.bgTop);
+  document.documentElement.style.setProperty("--bg-bottom", theme.bgBottom);
+  document.documentElement.style.setProperty("--panel", theme.panel);
+  document.documentElement.style.setProperty("--panel-strong", theme.panelStrong);
+  document.documentElement.style.setProperty("--line", theme.line);
+  document.documentElement.style.setProperty("--text", theme.text);
+  document.documentElement.style.setProperty("--muted", theme.muted);
+  document.documentElement.style.setProperty("--accent", theme.accent);
+  document.documentElement.style.setProperty("--accent-2", theme.accent2);
+  document.documentElement.style.setProperty("--filled-border", theme.filledBorder);
+  document.documentElement.style.setProperty("--preview-ring", theme.previewRing);
   document.documentElement.style.setProperty("--filled-start", theme.filledStart);
   document.documentElement.style.setProperty("--filled-end", theme.filledEnd);
   document.documentElement.style.setProperty("--piece-start", theme.pieceStart);
@@ -517,6 +676,51 @@ function getCompletedLines() {
       }
     }
 
+    if (full) {
+      fullCols.push(col);
+    }
+  }
+
+  return { fullRows, fullCols };
+}
+
+function getCompletedLinesForPlacement(shape, startRow, startCol) {
+  const fullRows = [];
+  const fullCols = [];
+  const pendingCells = new Set();
+
+  for (let row = 0; row < shape.length; row += 1) {
+    for (let col = 0; col < shape[0].length; col += 1) {
+      if (!shape[row][col]) {
+        continue;
+      }
+      pendingCells.add(`${startRow + row}-${startCol + col}`);
+    }
+  }
+
+  for (let row = 0; row < GRID_SIZE; row += 1) {
+    let full = true;
+    for (let col = 0; col < GRID_SIZE; col += 1) {
+      if (board[row][col] || pendingCells.has(`${row}-${col}`)) {
+        continue;
+      }
+      full = false;
+      break;
+    }
+    if (full) {
+      fullRows.push(row);
+    }
+  }
+
+  for (let col = 0; col < GRID_SIZE; col += 1) {
+    let full = true;
+    for (let row = 0; row < GRID_SIZE; row += 1) {
+      if (board[row][col] || pendingCells.has(`${row}-${col}`)) {
+        continue;
+      }
+      full = false;
+      break;
+    }
     if (full) {
       fullCols.push(col);
     }
@@ -681,21 +885,32 @@ function showComboBubble(comboSize) {
 
   playComboSound(comboSize);
 
-  document.querySelectorAll(".combo-bubble").forEach((bubble) => bubble.remove());
+  document.querySelectorAll(".combo-bubble, .combo-cat").forEach((item) => item.remove());
   const bubble = document.createElement("div");
   bubble.className = "combo-bubble";
   bubble.textContent = `COMBO (${comboSize})`;
+  const cat = document.createElement("img");
+  cat.className = "combo-cat";
+  cat.alt = "Gatito manga celebrando combo";
+  cat.src = COMBO_CAT_IMAGES[Math.floor(Math.random() * COMBO_CAT_IMAGES.length)];
 
   const boardRect = boardEl.getBoundingClientRect();
   const panelRect = boardPanelEl.getBoundingClientRect();
-  bubble.style.left = `${boardRect.left - panelRect.left + boardRect.width / 2}px`;
-  bubble.style.top = `${boardRect.top - panelRect.top + boardRect.height / 2}px`;
+  const centerX = boardRect.left - panelRect.left + boardRect.width / 2;
+  const centerY = boardRect.top - panelRect.top + boardRect.height / 2;
+  bubble.style.left = `${centerX}px`;
+  bubble.style.top = `${centerY}px`;
+  cat.style.left = `${centerX - 118}px`;
+  cat.style.top = `${centerY + 26}px`;
 
+  boardPanelEl.appendChild(cat);
   boardPanelEl.appendChild(bubble);
+  cat.classList.add("show");
   bubble.classList.add("show");
 
   window.setTimeout(() => {
     bubble.remove();
+    cat.remove();
   }, COMBO_BUBBLE_MS);
 }
 

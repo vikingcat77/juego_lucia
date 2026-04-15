@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 220" role="img" aria-label="Gatito manga sorprendido">
+  <defs>
+    <pattern id="dots2" x="0" y="0" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="1.8" cy="1.8" r="1" fill="#64748b"/>
+    </pattern>
+  </defs>
+  <rect width="220" height="220" rx="28" fill="#fefce8"/>
+  <rect x="14" y="14" width="192" height="192" rx="24" fill="url(#dots2)" opacity="0.28"/>
+  <g fill="#fff" stroke="#111827" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 82l18-36 22 34"/>
+    <path d="M164 82l-18-36-22 34"/>
+    <ellipse cx="110" cy="126" rx="68" ry="54"/>
+  </g>
+  <circle cx="88" cy="122" r="8" fill="#111827"/>
+  <circle cx="132" cy="122" r="8" fill="#111827"/>
+  <circle cx="85" cy="119" r="2.2" fill="#fff"/>
+  <circle cx="129" cy="119" r="2.2" fill="#fff"/>
+  <path d="M104 143q6 7 12 0" stroke="#111827" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="110" cy="152" rx="10" ry="8" fill="none" stroke="#111827" stroke-width="5"/>
+  <path d="M68 138H46M68 148H48M152 138h22M152 148h20" stroke="#111827" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="72" cy="154" r="7" fill="#fb7185" opacity="0.7"/>
+  <circle cx="148" cy="154" r="7" fill="#fb7185" opacity="0.7"/>
+  <path d="M178 52l10-10M190 52l-10-10" stroke="#111827" stroke-width="4"/>
+</svg>
