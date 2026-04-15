@@ -1,5 +1,6 @@
-const GRID_SIZE = 10;
+const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
+const DRAG_POINTER_GAP_Y = 120;
 const PIECE_THEMES = [
   { filledStart: "#f97316", filledEnd: "#fb923c", pieceStart: "#f97316", pieceEnd: "#facc15" },
   { filledStart: "#0f766e", filledEnd: "#14b8a6", pieceStart: "#14b8a6", pieceEnd: "#67e8f9" },
@@ -17,7 +18,7 @@ const BASE_SHAPES = [
   [[1, 1, 1, 1]],
   [[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]],
   [[1, 1, 1], [1, 1, 1]],
-  [[1, 1], [1, 0], [1, 0]],
+  [[1, 0, 0], [1, 0, 0], [1, 1, 1]],
   [[1, 1, 0], [0, 1, 1]]
 ];
 
@@ -180,7 +181,7 @@ function beginDrag(event, pieceId) {
     proxyWidth,
     proxyHeight,
     offsetX: proxyWidth / 2,
-    offsetY: proxyHeight + 54
+    offsetY: proxyHeight + DRAG_POINTER_GAP_Y
   };
   sourceEl.classList.add("dragging");
   document.body.appendChild(proxy);

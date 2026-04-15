@@ -13,8 +13,10 @@
   --filled-end: #fb923c;
   --piece-start: #f97316;
   --piece-end: #facc15;
-  --cell: 34px;
+  --grid-size: 8;
+  --board-span: 376px;
   --gap: 4px;
+  --cell: calc((var(--board-span) - (var(--grid-size) - 1) * var(--gap)) / var(--grid-size));
   --shadow: 0 28px 70px rgba(154, 52, 18, 0.18);
 }
 
@@ -145,7 +147,7 @@ button:hover {
   width: fit-content;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(10, var(--cell));
+  grid-template-columns: repeat(var(--grid-size), var(--cell));
   gap: var(--gap);
   padding: 1rem;
   border-radius: 28px;
@@ -740,7 +742,7 @@ button:hover {
 
 @media (max-width: 640px) {
   :root {
-    --cell: 28px;
+    --board-span: 307px;
     --gap: 3px;
   }
 

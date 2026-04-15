@@ -4,7 +4,7 @@ Juego web tipo `Block Puzzle` / `TenTrix`.
 
 ## Base actual
 
-- Tablero `10x10`.
+- Tablero `8x8`.
 - 3 piezas disponibles por turno.
 - Arrastre con vista previa.
 - Limpieza de filas y columnas completas.
