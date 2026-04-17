@@ -165,6 +165,7 @@ button:hover {
 
 .board-panel {
   position: relative;
+  z-index: 40;
   overflow: hidden;
   padding: 1.2rem;
 }
@@ -289,7 +290,7 @@ button:hover {
   display: grid;
   gap: 4px;
   pointer-events: none;
-  z-index: 999;
+  z-index: 90;
   transform: translate(-9999px, -9999px);
   filter: drop-shadow(0 16px 24px rgba(120, 53, 15, 0.28));
 }

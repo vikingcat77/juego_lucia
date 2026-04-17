@@ -1,6 +1,7 @@
 const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const DRAG_POINTER_GAP_Y = 120;
+const GUIDE_PREVIEW_EXTRA_LIFT_Y = 72;
 const VISUAL_THEMES = [
   {
     bgTop: "#fef3c7",
@@ -122,6 +123,7 @@ const BASE_SHAPES = [
   [[1, 1]],
   [[1, 0], [0, 1]],
   [[1, 1, 1]],
+  [[1, 0, 1], [0, 1, 0]],
   [[1, 1, 1]],
   [[0, 1], [1, 1]],
   [[1, 1], [1, 1]],
@@ -295,7 +297,11 @@ function beginDrag(event, pieceId) {
     proxyWidth,
     proxyHeight,
     offsetX: proxyWidth / 2,
-    offsetY: proxyHeight + DRAG_POINTER_GAP_Y
+    offsetY: proxyHeight + DRAG_POINTER_GAP_Y,
+    lastClientX: event.clientX,
+    lastClientY: event.clientY,
+    guideLeadX: 0,
+    guideLeadY: 0
   };
   sourceEl.classList.add("dragging");
   document.body.appendChild(proxy);
@@ -330,6 +336,7 @@ function onPointerMove(event) {
     return;
   }
 
+  updateGuideLead(event.clientX, event.clientY);
   moveProxy(event.clientX, event.clientY);
   updatePreview(event.clientX, event.clientY);
   spawnDragTrail(event.clientX, event.clientY);
@@ -340,6 +347,7 @@ function onPointerUp(event) {
     return;
   }
 
+  updateGuideLead(event.clientX, event.clientY);
   const dropPoint = getBoardPointFromPointer(event.clientX, event.clientY);
   const placement = getPlacementFromPoint(
     dropPoint.x,
@@ -379,6 +387,33 @@ function moveProxy(clientX, clientY) {
   const x = clientX - dragState.offsetX;
   const y = clientY - dragState.offsetY;
   dragState.proxy.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function updateGuideLead(clientX, clientY) {
+  if (!dragState) {
+    return;
+  }
+
+  const dx = clientX - dragState.lastClientX;
+  const dy = clientY - dragState.lastClientY;
+  dragState.lastClientX = clientX;
+  dragState.lastClientY = clientY;
+
+  const followX = 0.9;
+  const followY = 0.3;
+  const damping = 0.74;
+  const maxLeadX = 92;
+  const maxLeadY = 40;
+  dragState.guideLeadX = clamp(
+    dragState.guideLeadX * damping + dx * followX,
+    -maxLeadX,
+    maxLeadX
+  );
+  dragState.guideLeadY = clamp(
+    dragState.guideLeadY * damping + dy * followY,
+    -maxLeadY,
+    maxLeadY
+  );
 }
 
 function updatePreview(clientX, clientY) {
@@ -433,12 +468,12 @@ function getBoardPointFromPointer(clientX, clientY) {
     return { x: clientX, y: clientY };
   }
 
-  const proxyX = clientX - dragState.offsetX;
-  const proxyY = clientY - dragState.offsetY;
-
   return {
-    x: proxyX + dragState.proxyWidth / 2,
-    y: proxyY + dragState.proxyHeight / 2
+    x: clientX + dragState.guideLeadX,
+    y:
+      clientY +
+      dragState.guideLeadY -
+      (dragState.proxyHeight / 2 + DRAG_POINTER_GAP_Y + GUIDE_PREVIEW_EXTRA_LIFT_Y)
   };
 }
 
@@ -1081,7 +1116,7 @@ function evaluateGameState() {
 
   document.body.classList.add("game-over");
   toggleGameOverBanner(true);
-  setStatus("Fin de partida en Gatitos y Cajitas");
+  setStatus("Gatito Over");
 }
 
 function canFitAnywhere(shape) {
@@ -1098,6 +1133,10 @@ function canFitAnywhere(shape) {
 
 function isInsideBoard(row, col) {
   return row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
 
 function getCell(row, col) {
@@ -1120,7 +1159,7 @@ function toggleGameOverBanner(show) {
   if (!banner) {
     banner = document.createElement("div");
     banner.className = "game-over-banner";
-    banner.textContent = "Gatitos y Cajitas";
+    banner.textContent = "Gatito Over";
     boardPanelEl.appendChild(banner);
   }
 }
