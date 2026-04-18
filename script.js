@@ -123,7 +123,7 @@ const BASE_SHAPES = [
   [[1, 1]],
   [[1, 0], [0, 1]],
   [[1, 1, 1]],
-  [[1, 0, 1], [0, 1, 0]],
+  [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
   [[1, 1, 1]],
   [[0, 1], [1, 1]],
   [[1, 1], [1, 1]],
@@ -420,30 +420,18 @@ function updateGuideLead(clientX, clientY) {
   dragState.lastClientX = clientX;
   dragState.lastClientY = clientY;
 
-  const speed = Math.hypot(dx, dy);
-  const deadZone = 0.12;
-  const filteredDx = Math.abs(dx) < deadZone ? 0 : dx;
-  const filteredDy = Math.abs(dy) < deadZone ? 0 : dy;
-
-  // La guia debe reaccionar mas en lateral que en vertical.
-  const maxLeadX = 96;
-  const maxLeadY = 42;
-  const targetX = clamp(filteredDx * 8.2, -maxLeadX, maxLeadX);
-  const targetY = clamp(filteredDy * 3.8, -maxLeadY, maxLeadY);
-
-  // Cuando el puntero se frena, la guia vuelve hacia la pieza mas rapido.
-  const settleX = speed < 0.3 ? 0.44 : 0.31;
-  const settleY = speed < 0.3 ? 0.5 : 0.26;
-
+  const follow = 0.32;
+  const damping = 0.78;
+  const maxLead = 34;
   dragState.guideLeadX = clamp(
-    dragState.guideLeadX + (targetX - dragState.guideLeadX) * settleX,
-    -maxLeadX,
-    maxLeadX
+    dragState.guideLeadX * damping + dx * follow,
+    -maxLead,
+    maxLead
   );
   dragState.guideLeadY = clamp(
-    dragState.guideLeadY + (targetY - dragState.guideLeadY) * settleY,
-    -maxLeadY,
-    maxLeadY
+    dragState.guideLeadY * damping + dy * follow,
+    -maxLead,
+    maxLead
   );
 }
 
