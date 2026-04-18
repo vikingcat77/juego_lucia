@@ -1,5 +1,9 @@
 const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
+const LEADERBOARD_KEY = "juego_lucia_leaderboard";
+const PLAYER_NAME_KEY = "juego_lucia_player_name";
+const MAX_LEADERBOARD_ENTRIES = 10;
+const MAX_PLAYER_NAME_LENGTH = 10;
 const DRAG_POINTER_GAP_Y = 120;
 const GUIDE_PREVIEW_EXTRA_LIFT_Y = 24;
 const VISUAL_THEMES = [
@@ -147,6 +151,7 @@ const statusEl = document.getElementById("status");
 const startButton = document.getElementById("startButton");
 const quickRestartButton = document.getElementById("quickRestartButton");
 const startScreenEl = document.getElementById("startScreen");
+const leaderboardListEl = document.getElementById("leaderboardList");
 const boardPanelEl = document.querySelector(".board-panel");
 
 const LINE_CLEAR_ANIMATION_MS = 480;
@@ -164,11 +169,14 @@ let dragState = null;
 let activeThemeIndex = 0;
 let nextThemeSwapScore = 1000;
 let isResolvingMove = false;
+let hasHandledGameOver = false;
 let audioCtx = null;
 let lastTrailAt = 0;
 let hasShownNewRecordBubble = false;
 
+syncBestScoreFromLeaderboard();
 syncScoreDisplays();
+renderLeaderboard();
 
 startButton.addEventListener("click", startGame);
 quickRestartButton.addEventListener("click", startGame);
@@ -184,10 +192,11 @@ function startGame() {
   activeThemeIndex = 0;
   nextThemeSwapScore = 1000;
   isResolvingMove = false;
+  hasHandledGameOver = false;
   hasShownNewRecordBubble = false;
   applyVisualTheme();
   document.body.classList.remove("game-over");
-  document.querySelectorAll(".combo-bubble, .combo-cat, .record-bubble").forEach((item) => item.remove());
+  document.querySelectorAll(".combo-bubble, .combo-cat, .record-bubble, .score-modal").forEach((item) => item.remove());
   document.querySelectorAll(".pow-particle, .pow-text, .pow-ring, .pow-smoke, .pow-confetti, .drag-trail").forEach((item) => item.remove());
   toggleGameOverBanner(false);
   resetBoardFx();
@@ -285,6 +294,14 @@ function updateScore(points) {
   return themeChanged;
 }
 
+function syncBestScoreFromLeaderboard() {
+  const leaderboardBest = loadLeaderboard()[0]?.score || 0;
+  if (leaderboardBest > bestScore) {
+    bestScore = leaderboardBest;
+    localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+  }
+}
+
 function syncScoreDisplays() {
   const scoreText = String(score);
   const bestText = String(bestScore);
@@ -294,6 +311,170 @@ function syncScoreDisplays() {
   bestScoreEls.forEach((el) => {
     el.textContent = bestText;
   });
+}
+
+function loadLeaderboard() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]");
+    if (!Array.isArray(saved)) {
+      return [];
+    }
+
+    return saved
+      .map((entry) => ({
+        name: sanitizePlayerName(entry?.name || "GATO"),
+        score: Math.max(0, Number(entry?.score) || 0)
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, MAX_LEADERBOARD_ENTRIES);
+  } catch {
+    return [];
+  }
+}
+
+function saveLeaderboard(entries) {
+  const cleanEntries = entries
+    .map((entry) => ({
+      name: sanitizePlayerName(entry.name),
+      score: Math.max(0, Number(entry.score) || 0)
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_LEADERBOARD_ENTRIES);
+
+  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(cleanEntries));
+  bestScore = Math.max(bestScore, cleanEntries[0]?.score || 0);
+  localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+  syncScoreDisplays();
+  renderLeaderboard();
+}
+
+function sanitizePlayerName(name) {
+  return formatPlayerName(name) || "GATO";
+}
+
+function formatPlayerName(name) {
+  return String(name || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, "")
+    .trim()
+    .slice(0, MAX_PLAYER_NAME_LENGTH);
+}
+
+function renderLeaderboard() {
+  if (!leaderboardListEl) {
+    return;
+  }
+
+  renderLeaderboardIntoList(leaderboardListEl, loadLeaderboard());
+}
+
+function renderLeaderboardIntoList(listEl, entries) {
+  if (!listEl) {
+    return;
+  }
+
+  listEl.innerHTML = "";
+  if (entries.length === 0) {
+    const emptyItem = document.createElement("li");
+    emptyItem.className = "leaderboard-empty";
+    emptyItem.textContent = "Aun no hay puntuaciones.";
+    listEl.appendChild(emptyItem);
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const item = document.createElement("li");
+    const name = document.createElement("span");
+    const points = document.createElement("strong");
+    name.textContent = entry.name;
+    points.textContent = String(entry.score);
+    item.append(name, points);
+    listEl.appendChild(item);
+  });
+}
+
+function scoreQualifiesForLeaderboard(finalScore) {
+  if (finalScore <= 0) {
+    return false;
+  }
+
+  const entries = loadLeaderboard();
+  return entries.length < MAX_LEADERBOARD_ENTRIES || finalScore > entries[entries.length - 1].score;
+}
+
+function showScoreModal(finalScore) {
+  if (!boardPanelEl || boardPanelEl.querySelector(".score-modal")) {
+    return;
+  }
+
+  const qualifies = scoreQualifiesForLeaderboard(finalScore);
+  const modal = document.createElement("form");
+  modal.className = "score-modal";
+  modal.noValidate = true;
+  modal.innerHTML = `
+    <div class="score-modal-card">
+      <p class="eyebrow">Records</p>
+      <h2>${qualifies ? "Nueva marca" : "Top 10"}</h2>
+      <p class="score-modal-points">${finalScore} puntos</p>
+      <ol class="score-modal-list"></ol>
+      <div class="score-save-fields">
+        <label for="playerNameInput">Nombre</label>
+        <input id="playerNameInput" name="playerName" type="text" maxlength="${MAX_PLAYER_NAME_LENGTH}" autocomplete="off" inputmode="text">
+      </div>
+      <div class="score-modal-actions">
+        <button type="submit">${qualifies ? "Guardar" : "Cerrar"}</button>
+        <button class="score-modal-restart" type="button">Reiniciar</button>
+      </div>
+    </div>
+  `;
+
+  const input = modal.querySelector("input");
+  const fields = modal.querySelector(".score-save-fields");
+  const list = modal.querySelector(".score-modal-list");
+  const restart = modal.querySelector(".score-modal-restart");
+  let savedScore = false;
+
+  renderLeaderboardIntoList(list, loadLeaderboard());
+
+  if (qualifies) {
+    input.value = sanitizePlayerName(localStorage.getItem(PLAYER_NAME_KEY) || "GATO");
+  } else {
+    fields.hidden = true;
+  }
+
+  input.addEventListener("input", () => {
+    input.value = formatPlayerName(input.value);
+  });
+
+  modal.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!qualifies || savedScore) {
+      modal.remove();
+      return;
+    }
+
+    savedScore = true;
+    const name = sanitizePlayerName(input.value);
+    localStorage.setItem(PLAYER_NAME_KEY, name);
+    saveLeaderboard([...loadLeaderboard(), { name, score: finalScore }]);
+    renderLeaderboardIntoList(list, loadLeaderboard());
+    fields.hidden = true;
+    modal.querySelector('button[type="submit"]').textContent = "Cerrar";
+    setStatus("Puntuacion guardada en el top 10.");
+  });
+
+  restart.addEventListener("click", () => {
+    modal.remove();
+    startGame();
+  });
+
+  boardPanelEl.appendChild(modal);
+  if (qualifies) {
+    input.focus();
+    input.select();
+  }
 }
 
 function setStatus(message) {
@@ -1167,7 +1348,13 @@ function evaluateGameState() {
 
   document.body.classList.add("game-over");
   toggleGameOverBanner(true);
-  setStatus("Gatito Over");
+  if (hasHandledGameOver) {
+    return;
+  }
+
+  hasHandledGameOver = true;
+  setStatus(scoreQualifiesForLeaderboard(score) ? "Entras en el top 10." : "Gatito Over");
+  showScoreModal(score);
 }
 
 function canFitAnywhere(shape) {
