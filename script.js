@@ -138,10 +138,12 @@ const BASE_SHAPES = [
 
 const boardEl = document.getElementById("board");
 const trayEl = document.getElementById("tray");
-const scoreEl = document.getElementById("score");
-const bestScoreEl = document.getElementById("bestScore");
+const scoreEls = Array.from(document.querySelectorAll('[data-bind="score"]'));
+const bestScoreEls = Array.from(document.querySelectorAll('[data-bind="bestScore"]'));
 const statusEl = document.getElementById("status");
-const restartButton = document.getElementById("restartButton");
+const startButton = document.getElementById("startButton");
+const quickRestartButton = document.getElementById("quickRestartButton");
+const startScreenEl = document.getElementById("startScreen");
 const boardPanelEl = document.querySelector(".board-panel");
 
 const LINE_CLEAR_ANIMATION_MS = 480;
@@ -161,12 +163,15 @@ let nextThemeSwapScore = 1000;
 let isResolvingMove = false;
 let audioCtx = null;
 let lastTrailAt = 0;
+let hasShownNewRecordBubble = false;
 
-bestScoreEl.textContent = String(bestScore);
+syncScoreDisplays();
 
-restartButton.addEventListener("click", startGame);
+startButton.addEventListener("click", startGame);
+quickRestartButton.addEventListener("click", startGame);
 
 function startGame() {
+  hideStartScreen();
   board = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
   pieces = [];
   score = 0;
@@ -176,16 +181,17 @@ function startGame() {
   activeThemeIndex = 0;
   nextThemeSwapScore = 1000;
   isResolvingMove = false;
+  hasShownNewRecordBubble = false;
   applyVisualTheme();
   document.body.classList.remove("game-over");
-  document.querySelectorAll(".combo-bubble, .combo-cat").forEach((item) => item.remove());
+  document.querySelectorAll(".combo-bubble, .combo-cat, .record-bubble").forEach((item) => item.remove());
   document.querySelectorAll(".pow-particle, .pow-text, .pow-ring, .pow-smoke, .pow-confetti, .drag-trail").forEach((item) => item.remove());
   toggleGameOverBanner(false);
   resetBoardFx();
   boardEl.innerHTML = "";
   renderBoard();
   refillTray();
-  updateScore(0);
+  syncScoreDisplays();
   setStatus("Coge una pieza y colócala donde mejor encaje.");
 }
 
@@ -254,10 +260,15 @@ function refillTray() {
 }
 
 function updateScore(points) {
+  const previousBest = bestScore;
   score += points;
   if (score > bestScore) {
     bestScore = score;
     localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    if (!hasShownNewRecordBubble && score > previousBest) {
+      hasShownNewRecordBubble = true;
+      showNewRecordBubble();
+    }
   }
 
   let themeChanged = false;
@@ -267,9 +278,19 @@ function updateScore(points) {
     themeChanged = true;
   }
 
-  scoreEl.textContent = String(score);
-  bestScoreEl.textContent = String(bestScore);
+  syncScoreDisplays();
   return themeChanged;
+}
+
+function syncScoreDisplays() {
+  const scoreText = String(score);
+  const bestText = String(bestScore);
+  scoreEls.forEach((el) => {
+    el.textContent = scoreText;
+  });
+  bestScoreEls.forEach((el) => {
+    el.textContent = bestText;
+  });
 }
 
 function setStatus(message) {
@@ -399,18 +420,28 @@ function updateGuideLead(clientX, clientY) {
   dragState.lastClientX = clientX;
   dragState.lastClientY = clientY;
 
-  const followX = 0.9;
-  const followY = 0.3;
-  const damping = 0.74;
-  const maxLeadX = 92;
-  const maxLeadY = 40;
+  const speed = Math.hypot(dx, dy);
+  const deadZone = 0.12;
+  const filteredDx = Math.abs(dx) < deadZone ? 0 : dx;
+  const filteredDy = Math.abs(dy) < deadZone ? 0 : dy;
+
+  // La guia debe reaccionar mas en lateral que en vertical.
+  const maxLeadX = 96;
+  const maxLeadY = 42;
+  const targetX = clamp(filteredDx * 8.2, -maxLeadX, maxLeadX);
+  const targetY = clamp(filteredDy * 3.8, -maxLeadY, maxLeadY);
+
+  // Cuando el puntero se frena, la guia vuelve hacia la pieza mas rapido.
+  const settleX = speed < 0.3 ? 0.44 : 0.31;
+  const settleY = speed < 0.3 ? 0.5 : 0.26;
+
   dragState.guideLeadX = clamp(
-    dragState.guideLeadX * damping + dx * followX,
+    dragState.guideLeadX + (targetX - dragState.guideLeadX) * settleX,
     -maxLeadX,
     maxLeadX
   );
   dragState.guideLeadY = clamp(
-    dragState.guideLeadY * damping + dy * followY,
+    dragState.guideLeadY + (targetY - dragState.guideLeadY) * settleY,
     -maxLeadY,
     maxLeadY
   );
@@ -956,6 +987,21 @@ function showComboBubble(comboSize) {
   }, COMBO_BUBBLE_MS);
 }
 
+function showNewRecordBubble() {
+  if (!boardPanelEl) {
+    return;
+  }
+
+  const bubble = document.createElement("div");
+  bubble.className = "record-bubble";
+  bubble.textContent = "Nuevo record conseguido!";
+  boardPanelEl.appendChild(bubble);
+
+  window.setTimeout(() => {
+    bubble.remove();
+  }, 1800);
+}
+
 function getAudioContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) {
@@ -1164,4 +1210,13 @@ function toggleGameOverBanner(show) {
   }
 }
 
-startGame();
+function hideStartScreen() {
+  document.body.classList.add("playing");
+  if (startScreenEl) {
+    startScreenEl.setAttribute("aria-hidden", "true");
+  }
+}
+
+board = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+renderBoard();
+setStatus("Pulsa Nueva partida para empezar.");

@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gatitos y Cajitas</title>
-  <link rel="stylesheet" href="style.css?v=20260415-1">
+  <link rel="stylesheet" href="style.css?v=20260418-1">
 </head>
 <body>
   <main class="game-shell">
-    <section class="intro-panel">
+    <section id="startScreen" class="intro-panel start-screen">
       <p class="eyebrow">Gatitos y Cajitas</p>
       <h1>Gatitos y Cajitas</h1>
       <p class="intro">
@@ -18,17 +18,13 @@
 
       <div class="stats">
         <article class="stat-card">
-          <span class="stat-label">Puntos</span>
-          <strong id="score">0</strong>
-        </article>
-        <article class="stat-card">
           <span class="stat-label">Mejor</span>
-          <strong id="bestScore">0</strong>
+          <strong data-bind="bestScore">0</strong>
         </article>
       </div>
 
       <div class="controls">
-        <button id="restartButton" type="button">Nueva partida</button>
+        <button id="startButton" type="button">Nueva partida</button>
       </div>
 
       <ul class="tips">
@@ -39,6 +35,17 @@
     </section>
 
     <section class="board-panel">
+      <div class="game-hud">
+        <article class="hud-chip">
+          <span class="stat-label">Puntos</span>
+          <strong data-bind="score">0</strong>
+        </article>
+        <article class="hud-chip">
+          <span class="stat-label">Record</span>
+          <strong data-bind="bestScore">0</strong>
+        </article>
+        <button id="quickRestartButton" class="quick-restart" type="button">Reiniciar</button>
+      </div>
       <div id="board" class="board" aria-label="Tablero de juego"></div>
       <div class="status-bar">
         <p id="status">Coge una pieza para empezar.</p>
@@ -47,6 +54,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=20260415-1"></script>
+  <script src="script.js?v=20260418-1"></script>
 </body>
 </html>
