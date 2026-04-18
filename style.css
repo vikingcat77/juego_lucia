@@ -32,6 +32,7 @@ body {
   isolation: isolate;
   margin: 0;
   min-height: 100vh;
+  min-height: 100svh;
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   color: var(--text);
   background:
@@ -64,6 +65,7 @@ body::after {
 .game-shell {
   width: min(560px, calc(100vw - 1.2rem));
   min-height: 100vh;
+  min-height: 100svh;
   margin: 0 auto;
   display: grid;
   place-items: center;
@@ -102,6 +104,10 @@ h1 {
 #status {
   color: var(--muted);
   line-height: 1.5;
+}
+
+#status {
+  margin: 0;
 }
 
 .stats {
@@ -907,38 +913,141 @@ body:not(.playing) .quick-restart {
 
 @media (max-width: 640px) {
   :root {
-    --board-span: 307px;
+    --board-span: clamp(236px, min(calc(100vw - 3.2rem), calc(100svh - 280px)), 307px);
     --gap: 3px;
+  }
+
+  body.playing {
+    overflow: hidden;
   }
 
   .game-shell {
     width: min(100vw - 1rem, 560px);
-    padding: 0.5rem 0 1rem;
+    min-height: 100svh;
+    padding: 0.4rem 0;
   }
 
   .intro-panel,
   .board-panel {
-    border-radius: 24px;
+    border-radius: 18px;
   }
 
   .intro-panel {
     padding: 1.3rem;
   }
 
+  .board-panel {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100svh - 0.8rem);
+    padding: 0.65rem;
+  }
+
   .game-hud {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 0.35rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .hud-chip {
+    min-width: 0;
+    padding: 0.42rem 0.48rem;
+    border-radius: 12px;
+  }
+
+  .stat-label {
+    font-size: 0.68rem;
+  }
+
+  .hud-chip strong {
+    font-size: 1.05rem;
   }
 
   .quick-restart {
-    grid-column: 1 / -1;
-    width: 100%;
+    align-self: stretch;
+    padding: 0.45rem 0.58rem;
+    font-size: 0.86rem;
+  }
+
+  .board {
+    padding: 0.55rem;
+    border-radius: 18px;
+  }
+
+  .cell {
+    border-radius: 8px;
+  }
+
+  .status-bar {
+    min-height: 2.35rem;
+    padding: 0.28rem 0.35rem 0.42rem;
+    font-size: 0.86rem;
   }
 
   .tray {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
   }
 
   .piece {
-    min-height: 118px;
+    min-height: 84px;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .piece-grid {
+    transform: scale(0.82);
+  }
+}
+
+@media (max-width: 380px), (max-height: 620px) {
+  :root {
+    --board-span: clamp(220px, min(calc(100vw - 2.8rem), calc(100svh - 252px)), 286px);
+  }
+
+  .game-shell {
+    width: min(100vw - 0.6rem, 560px);
+    padding: 0.25rem 0;
+  }
+
+  .board-panel {
+    max-height: calc(100svh - 0.5rem);
+    padding: 0.48rem;
+  }
+
+  .game-hud {
+    gap: 0.28rem;
+    margin-bottom: 0.32rem;
+  }
+
+  .hud-chip {
+    padding: 0.34rem 0.4rem;
+  }
+
+  .quick-restart {
+    padding: 0.4rem 0.48rem;
+    font-size: 0.8rem;
+  }
+
+  .board {
+    padding: 0.42rem;
+  }
+
+  .status-bar {
+    min-height: 2rem;
+    padding: 0.18rem 0.25rem 0.3rem;
+    font-size: 0.8rem;
+  }
+
+  .tray {
+    gap: 0.32rem;
+  }
+
+  .piece {
+    min-height: 72px;
+  }
+
+  .piece-grid {
+    transform: scale(0.72);
   }
 }

@@ -1,7 +1,7 @@
 const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const DRAG_POINTER_GAP_Y = 120;
-const GUIDE_PREVIEW_EXTRA_LIFT_Y = 72;
+const GUIDE_PREVIEW_EXTRA_LIFT_Y = 24;
 const VISUAL_THEMES = [
   {
     bgTop: "#fef3c7",
@@ -135,6 +135,9 @@ const BASE_SHAPES = [
   [[1, 0, 0], [1, 0, 0], [1, 1, 1]],
   [[1, 1, 0], [0, 1, 1]]
 ];
+const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
+  JSON.stringify(shape) === JSON.stringify([[1, 1, 0], [0, 1, 1]]) ? 0.35 : 1
+));
 
 const boardEl = document.getElementById("board");
 const trayEl = document.getElementById("tray");
@@ -647,10 +650,24 @@ async function applyPlacement(pieceId, row, col) {
 }
 
 function getRandomShape() {
-  const baseShape = BASE_SHAPES[Math.floor(Math.random() * BASE_SHAPES.length)];
+  const baseShape = pickWeightedShape();
   const rotations = getUniqueRotations(baseShape);
   const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
   return structuredClone(randomRotation);
+}
+
+function pickWeightedShape() {
+  const totalWeight = SHAPE_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
+  let roll = Math.random() * totalWeight;
+
+  for (let index = 0; index < BASE_SHAPES.length; index += 1) {
+    roll -= SHAPE_WEIGHTS[index];
+    if (roll <= 0) {
+      return BASE_SHAPES[index];
+    }
+  }
+
+  return BASE_SHAPES[BASE_SHAPES.length - 1];
 }
 
 function getUniqueRotations(shape) {
