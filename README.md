@@ -8,7 +8,12 @@ Juego web tipo `Block Puzzle` / `TenTrix`.
 - 3 piezas disponibles por turno.
 - Arrastre con vista previa.
 - Limpieza de filas y columnas completas.
-- Puntuacion y mejor marca guardada en `localStorage`.
+- Sistema de racha con multiplicador de puntos.
+- HUD premium con progreso de bonus visual.
+- Mision diaria con progreso persistente.
+- Audio dinamico con control `Sonido ON/OFF`.
+- Puntuacion, ultima partida, ranking top 10 y mejor marca en `localStorage`.
+- Temas visuales dinamicos por hitos de puntuacion.
 
 ## Archivos
 

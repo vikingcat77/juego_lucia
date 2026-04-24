@@ -4,16 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gatitos y Cajitas</title>
-  <link rel="stylesheet" href="style.css?v=20260418-1">
+  <link rel="stylesheet" href="style.css?v=20260424-2">
 </head>
 <body>
   <main class="game-shell">
     <section id="startScreen" class="intro-panel start-screen">
-      <p class="eyebrow">Gatitos y Cajitas</p>
+      <p class="eyebrow">Edicion Deluxe</p>
       <h1>Gatitos y Cajitas</h1>
       <p class="intro">
         Arrastra una pieza al tablero. Cuando completes una fila o una columna,
-        se borrara y sumaras puntos.
+        se borrara y sumaras puntos con multiplicador por racha.
       </p>
 
       <div class="stats">
@@ -21,11 +21,24 @@
           <span class="stat-label">Mejor</span>
           <strong data-bind="bestScore">0</strong>
         </article>
+        <article class="stat-card">
+          <span class="stat-label">Ultima</span>
+          <strong data-bind="lastScore">0</strong>
+        </article>
       </div>
 
       <div class="controls">
         <button id="startButton" type="button">Nueva partida</button>
       </div>
+
+      <section class="mission-card" aria-label="Mision diaria">
+        <p class="stat-label">Mision Diaria</p>
+        <h3 data-bind="missionTitle">Cargando mision...</h3>
+        <div class="hud-meter">
+          <span data-bind="missionProgressBar"></span>
+        </div>
+        <p data-bind="missionProgressText">0%</p>
+      </section>
 
       <section class="leaderboard-panel" aria-label="Mejores puntuaciones">
         <h2>Top 10</h2>
@@ -34,6 +47,7 @@
 
       <ul class="tips">
         <li>Completa filas o columnas para limpiar espacio.</li>
+        <li>Encadena limpiezas seguidas para subir tu multiplicador.</li>
         <li>Cuando gastes las 3 piezas, apareceran otras nuevas.</li>
         <li>La partida termina si ninguna pieza cabe en el tablero.</li>
       </ul>
@@ -49,16 +63,38 @@
           <span class="stat-label">Record</span>
           <strong data-bind="bestScore">0</strong>
         </article>
-        <button id="quickRestartButton" class="quick-restart" type="button">Reiniciar</button>
+        <article class="hud-chip">
+          <span class="stat-label">Racha</span>
+          <strong data-bind="streak">x1</strong>
+        </article>
+        <article class="hud-chip hud-chip-progress">
+          <span class="stat-label">Bonus visual</span>
+          <div class="hud-meter">
+            <span id="themeProgressBar"></span>
+          </div>
+          <small id="themeProgressText">1000 para cambio</small>
+        </article>
+        <div class="hud-actions">
+          <button id="quickRestartButton" class="quick-restart" type="button">Reiniciar</button>
+          <button id="soundToggleButton" class="quick-restart sound-toggle" type="button" aria-pressed="true">Sonido ON</button>
+        </div>
       </div>
       <div id="board" class="board" aria-label="Tablero de juego"></div>
       <div class="status-bar">
-        <p id="status">Coge una pieza para empezar.</p>
+        <p id="status" aria-live="polite">Coge una pieza para empezar.</p>
       </div>
+      <section class="mission-strip" aria-label="Mision diaria">
+        <p class="stat-label">Mision</p>
+        <p data-bind="missionTitle">Cargando mision...</p>
+        <div class="hud-meter">
+          <span data-bind="missionProgressBar"></span>
+        </div>
+        <p data-bind="missionProgressText">0%</p>
+      </section>
       <div id="tray" class="tray" aria-label="Piezas disponibles"></div>
     </section>
   </main>
 
-  <script src="script.js?v=20260418-1"></script>
+  <script src="script.js?v=20260424-2"></script>
 </body>
 </html>

@@ -2,10 +2,14 @@ const GRID_SIZE = 8;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const LEADERBOARD_KEY = "juego_lucia_leaderboard";
 const PLAYER_NAME_KEY = "juego_lucia_player_name";
+const LAST_SCORE_KEY = "juego_lucia_last_score";
+const SOUND_ENABLED_KEY = "juego_lucia_sound_enabled";
+const DAILY_MISSION_KEY = "juego_lucia_daily_mission";
 const MAX_LEADERBOARD_ENTRIES = 10;
 const MAX_PLAYER_NAME_LENGTH = 10;
 const DRAG_POINTER_GAP_Y = 120;
 const GUIDE_PREVIEW_EXTRA_LIFT_Y = 24;
+const THEME_SCORE_STEP = 1000;
 const VISUAL_THEMES = [
   {
     bgTop: "#fef3c7",
@@ -121,8 +125,15 @@ const COMBO_MEOW_LINES = [
   "MRRRIAU!",
   "MIAU MIAU!"
 ];
+const DAILY_MISSION_CATALOG = [
+  { id: "lines", title: "Limpia lineas", target: 12, unit: "lineas", description: "Limpia 12 lineas hoy." },
+  { id: "combos", title: "Haz combos", target: 5, unit: "combos", description: "Consigue 5 combos hoy." },
+  { id: "pieces", title: "Constructor", target: 35, unit: "piezas", description: "Coloca 35 piezas hoy." },
+  { id: "points", title: "Sube puntos", target: 2800, unit: "puntos", description: "Acumula 2800 puntos hoy." }
+];
 
 const BASE_SHAPES = [
+  [[1]],
   [[1, 1]],
   [[1, 1]],
   [[1, 0], [0, 1]],
@@ -140,19 +151,31 @@ const BASE_SHAPES = [
   [[1, 1, 0], [0, 1, 1]]
 ];
 const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
-  JSON.stringify(shape) === JSON.stringify([[1, 1, 0], [0, 1, 1]]) ? 0.35 : 1
+  JSON.stringify(shape) === JSON.stringify([[1, 1, 0], [0, 1, 1]])
+    ? 0.35
+    : JSON.stringify(shape) === JSON.stringify([[1]])
+      ? 0.72
+      : 1
 ));
 
 const boardEl = document.getElementById("board");
 const trayEl = document.getElementById("tray");
 const scoreEls = Array.from(document.querySelectorAll('[data-bind="score"]'));
 const bestScoreEls = Array.from(document.querySelectorAll('[data-bind="bestScore"]'));
+const streakEls = Array.from(document.querySelectorAll('[data-bind="streak"]'));
+const lastScoreEls = Array.from(document.querySelectorAll('[data-bind="lastScore"]'));
+const missionTitleEls = Array.from(document.querySelectorAll('[data-bind="missionTitle"]'));
+const missionProgressTextEls = Array.from(document.querySelectorAll('[data-bind="missionProgressText"]'));
+const missionProgressBarEls = Array.from(document.querySelectorAll('[data-bind="missionProgressBar"]'));
 const statusEl = document.getElementById("status");
 const startButton = document.getElementById("startButton");
 const quickRestartButton = document.getElementById("quickRestartButton");
+const soundToggleButton = document.getElementById("soundToggleButton");
 const startScreenEl = document.getElementById("startScreen");
 const leaderboardListEl = document.getElementById("leaderboardList");
 const boardPanelEl = document.querySelector(".board-panel");
+const themeProgressBarEl = document.getElementById("themeProgressBar");
+const themeProgressTextEl = document.getElementById("themeProgressText");
 
 const LINE_CLEAR_ANIMATION_MS = 480;
 const COMBO_BUBBLE_MS = 1400;
@@ -162,35 +185,228 @@ const DRAG_TRAIL_INTERVAL_MS = 34;
 let board = [];
 let pieces = [];
 let score = 0;
-let bestScore = Number(localStorage.getItem(BEST_SCORE_KEY) || 0);
+let bestScore = toSafeScore(safeStorageGet(BEST_SCORE_KEY, "0"));
+let lastScore = toSafeScore(safeStorageGet(LAST_SCORE_KEY, "0"));
 let previewCells = [];
 let previewLineCells = [];
 let dragState = null;
 let activeThemeIndex = 0;
-let nextThemeSwapScore = 1000;
+let nextThemeSwapScore = THEME_SCORE_STEP;
 let isResolvingMove = false;
 let hasHandledGameOver = false;
 let audioCtx = null;
 let lastTrailAt = 0;
 let hasShownNewRecordBubble = false;
+let comboStreak = 0;
+let scoreMultiplier = 1;
+let soundEnabled = safeStorageGet(SOUND_ENABLED_KEY, "1") !== "0";
+let dailyMission = null;
 
 syncBestScoreFromLeaderboard();
 syncScoreDisplays();
 renderLeaderboard();
+initDailyMission();
+syncSoundToggleButton();
 
 startButton.addEventListener("click", startGame);
 quickRestartButton.addEventListener("click", startGame);
+soundToggleButton?.addEventListener("click", toggleSound);
+
+function safeStorageGet(key, fallback = "") {
+  try {
+    const value = localStorage.getItem(key);
+    return value === null ? fallback : value;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function toSafeScore(value) {
+  return Math.max(0, Number(value) || 0);
+}
+
+function createPieceId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `piece-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function cloneShape(shape) {
+  return shape.map((row) => [...row]);
+}
+
+function countShapeCells(shape) {
+  return shape.reduce((sum, row) => (
+    sum + row.reduce((rowSum, value) => rowSum + (value ? 1 : 0), 0)
+  ), 0);
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  safeStorageSet(SOUND_ENABLED_KEY, soundEnabled ? "1" : "0");
+  syncSoundToggleButton();
+  setStatus(soundEnabled ? "Sonido activado." : "Sonido desactivado.");
+}
+
+function syncSoundToggleButton() {
+  if (!soundToggleButton) {
+    return;
+  }
+
+  soundToggleButton.textContent = soundEnabled ? "Sonido ON" : "Sonido OFF";
+  soundToggleButton.setAttribute("aria-pressed", soundEnabled ? "true" : "false");
+  soundToggleButton.classList.toggle("is-off", !soundEnabled);
+}
+
+function getTodayMissionDateKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getMissionByDate(dateKey) {
+  const seed = dateKey.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const index = seed % DAILY_MISSION_CATALOG.length;
+  return DAILY_MISSION_CATALOG[index];
+}
+
+function initDailyMission() {
+  const dateKey = getTodayMissionDateKey();
+  const missionDef = getMissionByDate(dateKey);
+  const stored = loadStoredDailyMission();
+  const progress = (
+    stored &&
+    stored.dateKey === dateKey &&
+    stored.id === missionDef.id
+  ) ? Math.max(0, Number(stored.progress) || 0) : 0;
+
+  dailyMission = {
+    dateKey,
+    id: missionDef.id,
+    title: missionDef.title,
+    description: missionDef.description,
+    unit: missionDef.unit,
+    target: missionDef.target,
+    progress,
+    completed: progress >= missionDef.target
+  };
+
+  saveDailyMission();
+  syncMissionDisplays();
+}
+
+function loadStoredDailyMission() {
+  try {
+    const raw = safeStorageGet(DAILY_MISSION_KEY, "");
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveDailyMission() {
+  if (!dailyMission) {
+    return;
+  }
+
+  safeStorageSet(DAILY_MISSION_KEY, JSON.stringify({
+    dateKey: dailyMission.dateKey,
+    id: dailyMission.id,
+    progress: dailyMission.progress
+  }));
+}
+
+function syncMissionDisplays() {
+  if (!dailyMission) {
+    return;
+  }
+
+  const progress = clamp(dailyMission.progress / dailyMission.target, 0, 1);
+  const title = dailyMission.title;
+  const progressText = dailyMission.completed
+    ? "Completada!"
+    : `${Math.min(dailyMission.progress, dailyMission.target)} / ${dailyMission.target} ${dailyMission.unit}`;
+
+  missionTitleEls.forEach((el) => {
+    el.textContent = title;
+    el.setAttribute("title", dailyMission.description);
+  });
+  missionProgressTextEls.forEach((el) => {
+    el.textContent = progressText;
+  });
+  missionProgressBarEls.forEach((el) => {
+    el.style.width = `${Math.round(progress * 100)}%`;
+  });
+}
+
+function updateDailyMissionProgress({ linesCleared = 0, combos = 0, piecesPlaced = 0, points = 0 }) {
+  if (!dailyMission || dailyMission.completed) {
+    return false;
+  }
+
+  let delta = 0;
+  if (dailyMission.id === "lines") {
+    delta = linesCleared;
+  } else if (dailyMission.id === "combos") {
+    delta = combos;
+  } else if (dailyMission.id === "pieces") {
+    delta = piecesPlaced;
+  } else if (dailyMission.id === "points") {
+    delta = points;
+  }
+
+  if (delta <= 0) {
+    return false;
+  }
+
+  let completedNow = false;
+  dailyMission.progress = Math.min(dailyMission.target, dailyMission.progress + delta);
+  if (dailyMission.progress >= dailyMission.target && !dailyMission.completed) {
+    dailyMission.completed = true;
+    completedNow = true;
+    showMissionCompleteBubble();
+    playMissionCompleteSound();
+  }
+
+  saveDailyMission();
+  syncMissionDisplays();
+  return completedNow;
+}
 
 function startGame() {
   hideStartScreen();
+  initDailyMission();
+  syncSoundToggleButton();
   board = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
   pieces = [];
   score = 0;
+  comboStreak = 0;
+  scoreMultiplier = 1;
   previewCells = [];
   previewLineCells = [];
   dragState = null;
   activeThemeIndex = 0;
-  nextThemeSwapScore = 1000;
+  nextThemeSwapScore = THEME_SCORE_STEP;
   isResolvingMove = false;
   hasHandledGameOver = false;
   hasShownNewRecordBubble = false;
@@ -204,7 +420,7 @@ function startGame() {
   renderBoard();
   refillTray();
   syncScoreDisplays();
-  setStatus("Coge una pieza y colócala donde mejor encaje.");
+  setStatus("Coge una pieza y coloca un combo para activar multiplicador.");
 }
 
 function renderBoard() {
@@ -230,9 +446,11 @@ function createPieceElement(piece) {
   const pieceEl = document.createElement("article");
   const rows = piece.shape.length;
   const cols = piece.shape[0].length;
+  const blockCount = countShapeCells(piece.shape);
 
   pieceEl.className = "piece";
   pieceEl.dataset.id = piece.id;
+  pieceEl.dataset.blocks = String(blockCount);
 
   const grid = document.createElement("div");
   grid.className = "piece-grid";
@@ -247,7 +465,11 @@ function createPieceElement(piece) {
     }
   }
 
+  const badge = document.createElement("span");
+  badge.className = "piece-badge";
+  badge.textContent = `${blockCount}x`;
   pieceEl.appendChild(grid);
+  pieceEl.appendChild(badge);
   pieceEl.addEventListener("pointerdown", (event) => beginDrag(event, piece.id));
   return pieceEl;
 }
@@ -260,15 +482,69 @@ function renderTray() {
 }
 
 function refillTray() {
-  while (pieces.length < 3) {
-    pieces.push({
-      id: crypto.randomUUID(),
-      shape: getRandomShape()
-    });
+  if (pieces.length > 0) {
+    renderTray();
+    evaluateGameState();
+    return;
   }
 
+  pieces = createFairTray();
   renderTray();
   evaluateGameState();
+}
+
+function createFairTray() {
+  const maxAttempts = 90;
+  let fallbackTray = Array.from({ length: 3 }, () => ({
+    id: createPieceId(),
+    shape: getRandomShape()
+  }));
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const candidateTray = Array.from({ length: 3 }, () => ({
+      id: createPieceId(),
+      shape: getRandomShape()
+    }));
+    const hasSmallPiece = candidateTray.some((piece) => countShapeCells(piece.shape) <= 3);
+    const hasPlayablePiece = candidateTray.some((piece) => canFitAnywhere(piece.shape));
+
+    if (hasSmallPiece && hasPlayablePiece) {
+      return candidateTray;
+    }
+
+    fallbackTray = candidateTray;
+  }
+
+  const emergencyPiece = createEmergencyPiece();
+  if (emergencyPiece) {
+    fallbackTray[0] = emergencyPiece;
+  }
+  return fallbackTray;
+}
+
+function createEmergencyPiece() {
+  const easyShapes = [[[1]], [[1, 1]], [[1], [1]], [[1, 1], [1, 1]]];
+
+  for (const shape of easyShapes) {
+    const rotations = getUniqueRotations(shape);
+    for (const rotated of rotations) {
+      if (canFitAnywhere(rotated)) {
+        return { id: createPieceId(), shape: cloneShape(rotated) };
+      }
+    }
+  }
+
+  return null;
+}
+
+function updateMultiplierFromMove(linesCleared) {
+  if (linesCleared > 0) {
+    comboStreak += 1;
+    scoreMultiplier = Math.min(2.6, 1 + comboStreak * 0.22);
+  } else {
+    comboStreak = 0;
+    scoreMultiplier = 1;
+  }
 }
 
 function updateScore(points) {
@@ -276,7 +552,7 @@ function updateScore(points) {
   score += points;
   if (score > bestScore) {
     bestScore = score;
-    localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    safeStorageSet(BEST_SCORE_KEY, String(bestScore));
     if (!hasShownNewRecordBubble && score > previousBest) {
       hasShownNewRecordBubble = true;
       showNewRecordBubble();
@@ -286,7 +562,7 @@ function updateScore(points) {
   let themeChanged = false;
   while (score >= nextThemeSwapScore) {
     randomizeVisualTheme();
-    nextThemeSwapScore += 1000;
+    nextThemeSwapScore += THEME_SCORE_STEP;
     themeChanged = true;
   }
 
@@ -298,24 +574,64 @@ function syncBestScoreFromLeaderboard() {
   const leaderboardBest = loadLeaderboard()[0]?.score || 0;
   if (leaderboardBest > bestScore) {
     bestScore = leaderboardBest;
-    localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+    safeStorageSet(BEST_SCORE_KEY, String(bestScore));
   }
 }
 
 function syncScoreDisplays() {
   const scoreText = String(score);
   const bestText = String(bestScore);
+  const streakText = `x${scoreMultiplier.toFixed(scoreMultiplier >= 2 ? 1 : 2).replace(/\.0$/, "")}`;
+  const lastText = String(lastScore);
   scoreEls.forEach((el) => {
     el.textContent = scoreText;
+    pulseLiveNumber(el, scoreText);
   });
   bestScoreEls.forEach((el) => {
     el.textContent = bestText;
+    pulseLiveNumber(el, bestText);
   });
+  streakEls.forEach((el) => {
+    el.textContent = streakText;
+    pulseLiveNumber(el, streakText);
+  });
+  lastScoreEls.forEach((el) => {
+    el.textContent = lastText;
+  });
+  syncThemeProgressDisplay();
+  document.title = `Gatitos y Cajitas - ${score} pts`;
+}
+
+function pulseLiveNumber(el, valueText) {
+  const previousValue = el.dataset.lastValue;
+  el.dataset.lastValue = valueText;
+  if (previousValue === valueText) {
+    return;
+  }
+  el.classList.remove("is-updated");
+  el.offsetWidth;
+  el.classList.add("is-updated");
+}
+
+function syncThemeProgressDisplay() {
+  if (!themeProgressBarEl || !themeProgressTextEl) {
+    return;
+  }
+
+  const previousSwapScore = Math.max(0, nextThemeSwapScore - THEME_SCORE_STEP);
+  const stageDelta = THEME_SCORE_STEP;
+  const progress = clamp((score - previousSwapScore) / stageDelta, 0, 1);
+  const remaining = Math.max(0, nextThemeSwapScore - score);
+
+  themeProgressBarEl.style.width = `${Math.round(progress * 100)}%`;
+  themeProgressTextEl.textContent = remaining === 0
+    ? "Cambio listo"
+    : `${remaining} para cambio`;
 }
 
 function loadLeaderboard() {
   try {
-    const saved = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]");
+    const saved = JSON.parse(safeStorageGet(LEADERBOARD_KEY, "[]"));
     if (!Array.isArray(saved)) {
       return [];
     }
@@ -343,9 +659,9 @@ function saveLeaderboard(entries) {
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_LEADERBOARD_ENTRIES);
 
-  localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(cleanEntries));
+  safeStorageSet(LEADERBOARD_KEY, JSON.stringify(cleanEntries));
   bestScore = Math.max(bestScore, cleanEntries[0]?.score || 0);
-  localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
+  safeStorageSet(BEST_SCORE_KEY, String(bestScore));
   syncScoreDisplays();
   renderLeaderboard();
 }
@@ -439,7 +755,7 @@ function showScoreModal(finalScore) {
   renderLeaderboardIntoList(list, loadLeaderboard());
 
   if (qualifies) {
-    input.value = sanitizePlayerName(localStorage.getItem(PLAYER_NAME_KEY) || "GATO");
+    input.value = sanitizePlayerName(safeStorageGet(PLAYER_NAME_KEY, "GATO"));
   } else {
     fields.hidden = true;
   }
@@ -457,7 +773,7 @@ function showScoreModal(finalScore) {
 
     savedScore = true;
     const name = sanitizePlayerName(input.value);
-    localStorage.setItem(PLAYER_NAME_KEY, name);
+    safeStorageSet(PLAYER_NAME_KEY, name);
     saveLeaderboard([...loadLeaderboard(), { name, score: finalScore }]);
     renderLeaderboardIntoList(list, loadLeaderboard());
     fields.hidden = true;
@@ -478,11 +794,22 @@ function showScoreModal(finalScore) {
 }
 
 function setStatus(message) {
+  if (!statusEl) {
+    return;
+  }
+
   statusEl.textContent = message;
+  statusEl.classList.remove("status-pop");
+  statusEl.offsetWidth;
+  statusEl.classList.add("status-pop");
 }
 
 function beginDrag(event, pieceId) {
   if (isResolvingMove) {
+    return;
+  }
+
+  if (event.isPrimary === false || event.button > 0) {
     return;
   }
 
@@ -513,7 +840,11 @@ function beginDrag(event, pieceId) {
   moveProxy(event.clientX, event.clientY);
   updatePreview(event.clientX, event.clientY);
   spawnDragTrail(event.clientX, event.clientY, true);
-  sourceEl.setPointerCapture(event.pointerId);
+  try {
+    sourceEl.setPointerCapture(event.pointerId);
+  } catch {
+    // Some mobile browsers can refuse capture during fast gesture transitions.
+  }
   sourceEl.addEventListener("pointermove", onPointerMove);
   sourceEl.addEventListener("pointerup", onPointerUp);
   sourceEl.addEventListener("pointercancel", onPointerUp);
@@ -563,6 +894,7 @@ function onPointerUp(event) {
   if (placement && canPlaceShape(dragState.piece.shape, placement.row, placement.col)) {
     applyPlacement(dragState.piece.id, placement.row, placement.col);
   } else {
+    playInvalidDropSound();
     setStatus("Esa pieza no cabe ahi. Prueba otra posicion.");
   }
 
@@ -575,7 +907,13 @@ function endDrag(pointerId) {
   }
 
   dragState.sourceEl.classList.remove("dragging");
-  dragState.sourceEl.releasePointerCapture(pointerId);
+  try {
+    if (dragState.sourceEl.hasPointerCapture(pointerId)) {
+      dragState.sourceEl.releasePointerCapture(pointerId);
+    }
+  } catch {
+    // Ignore release errors when pointer capture is already lost.
+  }
   dragState.sourceEl.removeEventListener("pointermove", onPointerMove);
   dragState.sourceEl.removeEventListener("pointerup", onPointerUp);
   dragState.sourceEl.removeEventListener("pointercancel", onPointerUp);
@@ -801,29 +1139,47 @@ async function applyPlacement(pieceId, row, col) {
       renderBoard();
     }
 
+    updateMultiplierFromMove(linesCleared);
     const placementPoints = filledCells * 5;
-    const bonusPoints = linesCleared * 50;
-    const themeChanged = updateScore(placementPoints + bonusPoints);
+    const linePoints = linesCleared * 50;
+    const basePoints = placementPoints + linePoints;
+    const gainedPoints = Math.round(basePoints * scoreMultiplier);
+    const themeChanged = updateScore(gainedPoints);
+    playPlacementSound(filledCells, linesCleared);
+    const missionCompletedNow = updateDailyMissionProgress({
+      linesCleared,
+      combos: linesCleared >= 2 ? 1 : 0,
+      piecesPlaced: 1,
+      points: gainedPoints
+    });
 
     if (linesCleared >= 2) {
-      showComboBubble(linesCleared);
+      showComboBubble(linesCleared + comboStreak - 1);
     }
 
     if (themeChanged && linesCleared >= 2) {
-      setStatus(`Combo gatuno (${linesCleared})! Nuevo estilo desbloqueado por puntos.`);
+      playThemeUnlockSound();
+      setStatus(`Combo gatuno x${scoreMultiplier.toFixed(1)}! Nuevo estilo desbloqueado.`);
     } else if (themeChanged) {
-      setStatus("Has llegado a un nuevo bloque de 1000 puntos. Estilo aleatorio activado.");
+      playThemeUnlockSound();
+      setStatus("Has llegado al siguiente hito visual. Nuevo estilo activado.");
     } else if (linesCleared > 0) {
-      setStatus(`Buen movimiento. Has limpiado ${linesCleared} linea(s).`);
+      setStatus(`Limpiaste ${linesCleared} linea(s) y ganaste ${gainedPoints} puntos.`);
     } else {
-      setStatus("Pieza colocada. Sigue buscando huecos utiles.");
+      setStatus(`Pieza colocada (+${gainedPoints}). Busca huecos para mantener la racha.`);
     }
 
     if (pieces.length === 0) {
       refillTray();
-      setStatus("Nueva tanda de piezas lista.");
+      if (linesCleared === 0) {
+        setStatus("Nueva tanda de piezas lista. Piensa 2 jugadas por delante.");
+      }
     } else {
       evaluateGameState();
+    }
+
+    if (missionCompletedNow) {
+      setStatus("Mision diaria completada. Recompensa premium desbloqueada!");
     }
   } finally {
     isResolvingMove = false;
@@ -834,7 +1190,7 @@ function getRandomShape() {
   const baseShape = pickWeightedShape();
   const rotations = getUniqueRotations(baseShape);
   const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
-  return structuredClone(randomRotation);
+  return cloneShape(randomRotation);
 }
 
 function pickWeightedShape() {
@@ -897,6 +1253,7 @@ function randomizeVisualTheme() {
 
 function applyVisualTheme() {
   const theme = VISUAL_THEMES[activeThemeIndex];
+  const accentRgb = hexToRgb(theme.accent);
   document.documentElement.style.setProperty("--bg-top", theme.bgTop);
   document.documentElement.style.setProperty("--bg-bottom", theme.bgBottom);
   document.documentElement.style.setProperty("--panel", theme.panel);
@@ -912,6 +1269,21 @@ function applyVisualTheme() {
   document.documentElement.style.setProperty("--filled-end", theme.filledEnd);
   document.documentElement.style.setProperty("--piece-start", theme.pieceStart);
   document.documentElement.style.setProperty("--piece-end", theme.pieceEnd);
+  if (accentRgb) {
+    document.documentElement.style.setProperty("--accent-rgb", accentRgb);
+  }
+}
+
+function hexToRgb(hex) {
+  const normalized = String(hex || "").trim().replace("#", "");
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return null;
+  }
+
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  return `${r}, ${g}, ${b}`;
 }
 
 function getCompletedLines() {
@@ -1188,7 +1560,26 @@ function showNewRecordBubble() {
   }, 1800);
 }
 
+function showMissionCompleteBubble() {
+  if (!boardPanelEl) {
+    return;
+  }
+
+  const bubble = document.createElement("div");
+  bubble.className = "record-bubble mission-bubble";
+  bubble.textContent = "Mision completada!";
+  boardPanelEl.appendChild(bubble);
+
+  window.setTimeout(() => {
+    bubble.remove();
+  }, 1900);
+}
+
 function getAudioContext() {
+  if (!soundEnabled) {
+    return null;
+  }
+
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) {
     return null;
@@ -1337,6 +1728,117 @@ function playComboSound(comboSize) {
   }
 }
 
+function playPlacementSound(blocks, linesCleared) {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(310 + blocks * 8, now);
+  osc.frequency.exponentialRampToValueAtTime(220 + linesCleared * 32, now + 0.08);
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(linesCleared > 0 ? 0.05 : 0.032, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.095);
+}
+
+function playInvalidDropSound() {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(190, now);
+  osc.frequency.exponentialRampToValueAtTime(110, now + 0.14);
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(0.03, now + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.15);
+}
+
+function playThemeUnlockSound() {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const now = ctx.currentTime;
+  [520, 660, 830].forEach((freq, index) => {
+    const t = now + index * 0.06;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.045, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.11);
+  });
+}
+
+function playMissionCompleteSound() {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const now = ctx.currentTime;
+  [392, 523, 659, 784].forEach((freq, index) => {
+    const t = now + index * 0.055;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.04, t + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.085);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.09);
+  });
+}
+
+function playGameOverSound() {
+  const ctx = getAudioContext();
+  if (!ctx) {
+    return;
+  }
+
+  const now = ctx.currentTime;
+  [260, 190, 140].forEach((freq, index) => {
+    const t = now + index * 0.09;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.048, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.12);
+  });
+}
+
 function evaluateGameState() {
   const canContinue = pieces.some((piece) => canFitAnywhere(piece.shape));
 
@@ -1353,7 +1855,11 @@ function evaluateGameState() {
   }
 
   hasHandledGameOver = true;
-  setStatus(scoreQualifiesForLeaderboard(score) ? "Entras en el top 10." : "Gatito Over");
+  playGameOverSound();
+  lastScore = score;
+  safeStorageSet(LAST_SCORE_KEY, String(lastScore));
+  syncScoreDisplays();
+  setStatus(scoreQualifiesForLeaderboard(score) ? "Partida terminada. Entras en el top 10." : "Partida terminada. Gatito Over.");
   showScoreModal(score);
 }
 
