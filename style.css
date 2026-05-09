@@ -1348,9 +1348,15 @@ body:not(.playing) .quick-restart {
     font-size: 0.86rem;
   }
 
+  .mission-strip {
+    margin: 0.04rem 0 0.42rem;
+    padding: 0.5rem 0.65rem;
+  }
+
   .tray {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.45rem;
+    margin-top: -0.2rem;
   }
 
   .piece {
@@ -1403,8 +1409,15 @@ body:not(.playing) .quick-restart {
     font-size: 0.8rem;
   }
 
+  .mission-strip {
+    margin: 0.02rem 0 0.28rem;
+    padding: 0.4rem 0.55rem;
+    gap: 0.18rem;
+  }
+
   .tray {
     gap: 0.32rem;
+    margin-top: -0.28rem;
   }
 
   .piece {

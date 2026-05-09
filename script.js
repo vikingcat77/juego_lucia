@@ -7,8 +7,8 @@ const SOUND_ENABLED_KEY = "juego_lucia_sound_enabled";
 const DAILY_MISSION_KEY = "juego_lucia_daily_mission";
 const MAX_LEADERBOARD_ENTRIES = 10;
 const MAX_PLAYER_NAME_LENGTH = 10;
-const DRAG_POINTER_GAP_Y = 120;
-const GUIDE_PREVIEW_EXTRA_LIFT_Y = 24;
+const DRAG_POINTER_GAP_Y = 90;
+const GUIDE_PREVIEW_EXTRA_LIFT_Y = 10;
 const THEME_SCORE_STEP = 1000;
 const VISUAL_THEMES = [
   {
