@@ -7,8 +7,11 @@ const SOUND_ENABLED_KEY = "juego_lucia_sound_enabled";
 const DAILY_MISSION_KEY = "juego_lucia_daily_mission";
 const MAX_LEADERBOARD_ENTRIES = 10;
 const MAX_PLAYER_NAME_LENGTH = 10;
-const DRAG_POINTER_GAP_Y = 90;
-const GUIDE_PREVIEW_EXTRA_LIFT_Y = 10;
+const DRAG_POINTER_GAP_Y = 58;
+const GUIDE_PREVIEW_EXTRA_LIFT_Y = 0;
+const GUIDE_FOLLOW_FACTOR = 0.2;
+const GUIDE_DAMPING_FACTOR = 0.68;
+const GUIDE_MAX_LEAD = 16;
 const THEME_SCORE_STEP = 1000;
 const VISUAL_THEMES = [
   {
@@ -942,18 +945,15 @@ function updateGuideLead(clientX, clientY) {
   dragState.lastClientX = clientX;
   dragState.lastClientY = clientY;
 
-  const follow = 0.32;
-  const damping = 0.78;
-  const maxLead = 34;
   dragState.guideLeadX = clamp(
-    dragState.guideLeadX * damping + dx * follow,
-    -maxLead,
-    maxLead
+    dragState.guideLeadX * GUIDE_DAMPING_FACTOR + dx * GUIDE_FOLLOW_FACTOR,
+    -GUIDE_MAX_LEAD,
+    GUIDE_MAX_LEAD
   );
   dragState.guideLeadY = clamp(
-    dragState.guideLeadY * damping + dy * follow,
-    -maxLead,
-    maxLead
+    dragState.guideLeadY * GUIDE_DAMPING_FACTOR + dy * GUIDE_FOLLOW_FACTOR,
+    -GUIDE_MAX_LEAD,
+    GUIDE_MAX_LEAD
   );
 }
 
