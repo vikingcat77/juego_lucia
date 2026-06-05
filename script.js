@@ -184,8 +184,10 @@ const LINE_CLEAR_ANIMATION_MS = 480;
 const COMBO_BUBBLE_MS = 1400;
 const PARTICLE_BURST_MS = 820;
 const DRAG_TRAIL_INTERVAL_MS = 34;
+const LOW_POWER_EFFECTS_QUERY = window.matchMedia("(max-width: 640px), (pointer: coarse)");
 
 let board = [];
+let boardCells = [];
 let pieces = [];
 let score = 0;
 let bestScore = toSafeScore(safeStorageGet(BEST_SCORE_KEY, "0"));
@@ -428,8 +430,10 @@ function startGame() {
 
 function renderBoard() {
   boardEl.innerHTML = "";
+  boardCells = [];
 
   for (let row = 0; row < GRID_SIZE; row += 1) {
+    const rowCells = [];
     for (let col = 0; col < GRID_SIZE; col += 1) {
       const cell = document.createElement("div");
       cell.className = "cell";
@@ -441,7 +445,9 @@ function renderBoard() {
       }
 
       boardEl.appendChild(cell);
+      rowCells.push(cell);
     }
+    boardCells.push(rowCells);
   }
 }
 
@@ -1434,6 +1440,10 @@ function spawnPowParticles(targets) {
 
   playPowSound(targets.length);
 
+  if (LOW_POWER_EFFECTS_QUERY.matches) {
+    return;
+  }
+
   const panelRect = boardPanelEl.getBoundingClientRect();
   const center = targets.reduce(
     (acc, cell) => {
@@ -1597,6 +1607,10 @@ function getAudioContext() {
 }
 
 function spawnDragTrail(clientX, clientY, force = false) {
+  if (LOW_POWER_EFFECTS_QUERY.matches) {
+    return;
+  }
+
   const now = performance.now();
   if (!force && now - lastTrailAt < DRAG_TRAIL_INTERVAL_MS) {
     return;
@@ -1642,6 +1656,10 @@ function triggerBoardImpact(linesCleared) {
 }
 
 function triggerBoardFlash(linesCleared) {
+  if (LOW_POWER_EFFECTS_QUERY.matches) {
+    return;
+  }
+
   if (!boardPanelEl) {
     return;
   }
@@ -1884,7 +1902,7 @@ function clamp(value, min, max) {
 }
 
 function getCell(row, col) {
-  return boardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+  return boardCells[row]?.[col] || boardEl.querySelector(`[data-row="${row}"][data-col="${col}"]`);
 }
 
 function toggleGameOverBanner(show) {

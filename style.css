@@ -1453,3 +1453,60 @@ body:not(.playing) .quick-restart {
     transform: scale(0.72);
   }
 }
+
+
+@media (max-width: 640px), (pointer: coarse) {
+  body {
+    animation: none;
+    background-size: auto;
+  }
+
+  body::before {
+    opacity: 0.24;
+    background-size: 145% auto;
+  }
+
+  body::after,
+  .board-panel::before,
+  .board-flash,
+  .drag-trail,
+  .pow-smoke,
+  .pow-confetti {
+    display: none;
+  }
+
+  .intro-panel,
+  .board-panel,
+  .score-modal {
+    backdrop-filter: none;
+  }
+
+  .combo-cat {
+    filter: none;
+  }
+
+  .piece:hover {
+    transform: none;
+  }
+
+  .piece,
+  .hud-chip,
+  .board,
+  button {
+    box-shadow: none;
+  }
+
+  .cell.preview-target {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
