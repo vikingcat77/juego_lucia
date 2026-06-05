@@ -738,28 +738,45 @@ function showScoreModal(finalScore) {
   const modal = document.createElement("form");
   modal.className = "score-modal";
   modal.noValidate = true;
-  modal.innerHTML = `
-    <div class="score-modal-card">
-      <p class="eyebrow">Records</p>
-      <h2>${qualifies ? "Nueva marca" : "Top 10"}</h2>
-      <p class="score-modal-points">${finalScore} puntos</p>
-      <ol class="score-modal-list"></ol>
-      <div class="score-save-fields">
-        <label for="playerNameInput">Nombre</label>
-        <input id="playerNameInput" name="playerName" type="text" maxlength="${MAX_PLAYER_NAME_LENGTH}" autocomplete="off" inputmode="text">
-      </div>
-      <div class="score-modal-actions">
-        <button type="submit">${qualifies ? "Guardar" : "Cerrar"}</button>
-        <button class="score-modal-restart" type="button">Reiniciar</button>
-      </div>
-    </div>
-  `;
-
-  const input = modal.querySelector("input");
-  const fields = modal.querySelector(".score-save-fields");
-  const list = modal.querySelector(".score-modal-list");
-  const restart = modal.querySelector(".score-modal-restart");
+  const card = document.createElement("div");
+  const eyebrow = document.createElement("p");
+  const title = document.createElement("h2");
+  const points = document.createElement("p");
+  const list = document.createElement("ol");
+  const fields = document.createElement("div");
+  const label = document.createElement("label");
+  const input = document.createElement("input");
+  const actions = document.createElement("div");
+  const submit = document.createElement("button");
+  const restart = document.createElement("button");
   let savedScore = false;
+
+  card.className = "score-modal-card";
+  eyebrow.className = "eyebrow";
+  eyebrow.textContent = "Records";
+  title.textContent = qualifies ? "Nueva marca" : "Top 10";
+  points.className = "score-modal-points";
+  points.textContent = `${finalScore} puntos`;
+  list.className = "score-modal-list";
+  fields.className = "score-save-fields";
+  label.htmlFor = "playerNameInput";
+  label.textContent = "Nombre";
+  input.id = "playerNameInput";
+  input.name = "playerName";
+  input.type = "text";
+  input.maxLength = MAX_PLAYER_NAME_LENGTH;
+  input.autocomplete = "off";
+  input.inputMode = "text";
+  actions.className = "score-modal-actions";
+  submit.type = "submit";
+  submit.textContent = qualifies ? "Guardar" : "Cerrar";
+  restart.className = "score-modal-restart";
+  restart.type = "button";
+  restart.textContent = "Reiniciar";
+  fields.append(label, input);
+  actions.append(submit, restart);
+  card.append(eyebrow, title, points, list, fields, actions);
+  modal.appendChild(card);
 
   renderLeaderboardIntoList(list, loadLeaderboard());
 
@@ -786,7 +803,7 @@ function showScoreModal(finalScore) {
     saveLeaderboard([...loadLeaderboard(), { name, score: finalScore }]);
     renderLeaderboardIntoList(list, loadLeaderboard());
     fields.hidden = true;
-    modal.querySelector('button[type="submit"]').textContent = "Cerrar";
+    submit.textContent = "Cerrar";
     setStatus("Puntuacion guardada en el top 10.");
   });
 
