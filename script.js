@@ -136,7 +136,6 @@ const DAILY_MISSION_CATALOG = [
 ];
 
 const BASE_SHAPES = [
-  [[1]],
   [[1, 1]],
   [[1, 1]],
   [[1, 0], [0, 1]],
@@ -146,19 +145,24 @@ const BASE_SHAPES = [
   [[0, 1], [1, 1]],
   [[1, 1], [1, 1]],
   [[1, 0], [1, 1]],
+  [[0, 1], [1, 1]],
+  [[1, 1, 1, 1]],
+  [[1, 0], [1, 0], [1, 1]],
+  [[0, 1], [0, 1], [1, 1]],
   [[1, 1, 1], [0, 1, 0]],
+  [[0, 1, 1], [1, 1, 0]],
   [[1, 1, 1, 1, 1]],
   [[1, 1, 1], [1, 1, 1], [1, 1, 1]],
   [[1, 1, 1], [1, 1, 1]],
   [[1, 0, 0], [1, 0, 0], [1, 1, 1]],
+  [[0, 0, 1], [0, 0, 1], [1, 1, 1]],
   [[1, 1, 0], [0, 1, 1]]
 ];
 const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
   JSON.stringify(shape) === JSON.stringify([[1, 1, 0], [0, 1, 1]])
-    ? 0.35
-    : JSON.stringify(shape) === JSON.stringify([[1]])
-      ? 0.72
-      : 1
+    || JSON.stringify(shape) === JSON.stringify([[0, 1, 1], [1, 1, 0]])
+    ? 0.55
+    : 1
 ));
 
 const boardEl = document.getElementById("board");
@@ -532,7 +536,7 @@ function createFairTray() {
 }
 
 function createEmergencyPiece() {
-  const easyShapes = [[[1]], [[1, 1]], [[1], [1]], [[1, 1], [1, 1]]];
+  const easyShapes = [[[1, 1]], [[1], [1]], [[1, 1], [1, 1]], [[1, 1, 1]], [[0, 1], [1, 1]]];
 
   for (const shape of easyShapes) {
     const rotations = getUniqueRotations(shape);
