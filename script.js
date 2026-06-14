@@ -164,6 +164,21 @@ const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
     ? 0.55
     : 1
 ));
+const PIECE_TILE_ASSETS = [
+  "assets/pieces/cat-orange.png",
+  "assets/pieces/cat-siamese.png",
+  "assets/pieces/cat-gray.png",
+  "assets/pieces/cat-black.png",
+  "assets/pieces/cat-calico.png",
+  "assets/pieces/cat-white.png",
+  "assets/pieces/yarn-pink.png",
+  "assets/pieces/yarn-green.png",
+  "assets/pieces/yarn-yellow.png",
+  "assets/pieces/yarn-red.png",
+  "assets/pieces/yarn-blue.png",
+  "assets/pieces/yarn-purple.png",
+  "assets/pieces/yarn-orange.png"
+];
 
 const boardEl = document.getElementById("board");
 const trayEl = document.getElementById("tray");
@@ -446,6 +461,7 @@ function renderBoard() {
 
       if (board[row][col]) {
         cell.classList.add("filled");
+        applyTileAsset(cell, board[row][col]);
       }
 
       boardEl.appendChild(cell);
@@ -474,6 +490,9 @@ function createPieceElement(piece) {
     for (let col = 0; col < cols; col += 1) {
       const part = document.createElement("div");
       part.className = `piece-cell ${piece.shape[row][col] ? "on" : "off"}`;
+      if (piece.shape[row][col]) {
+        applyTileAsset(part, piece.tiles?.[row]?.[col]);
+      }
       grid.appendChild(part);
     }
   }
@@ -509,17 +528,11 @@ function refillTray() {
 function createFairTray() {
   const maxAttempts = 90;
   const desiredPlayablePieces = 2;
-  let fallbackTray = Array.from({ length: 3 }, () => ({
-    id: createPieceId(),
-    shape: getRandomShape()
-  }));
+  let fallbackTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
   let fallbackPlayableCount = countPlayablePieces(fallbackTray);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const candidateTray = Array.from({ length: 3 }, () => ({
-      id: createPieceId(),
-      shape: getRandomShape()
-    }));
+    const candidateTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
     const hasSmallPiece = candidateTray.some((piece) => countShapeCells(piece.shape) <= 3);
     const playableCount = countPlayablePieces(candidateTray);
 
@@ -554,7 +567,7 @@ function createPlayablePieces(amount) {
     const rotations = getUniqueRotations(shape);
     for (const rotated of rotations) {
       if (canFitAnywhere(rotated)) {
-        piecesToAdd.push({ id: createPieceId(), shape: cloneShape(rotated) });
+        piecesToAdd.push(createGamePiece(cloneShape(rotated)));
         if (piecesToAdd.length >= amount) {
           return piecesToAdd;
         }
@@ -563,6 +576,30 @@ function createPlayablePieces(amount) {
   }
 
   return piecesToAdd;
+}
+
+function createGamePiece(shape) {
+  return {
+    id: createPieceId(),
+    shape,
+    tiles: createTileMatrix(shape)
+  };
+}
+
+function createTileMatrix(shape) {
+  return shape.map((row) => row.map((cell) => (cell ? getRandomTileAsset() : "")));
+}
+
+function getRandomTileAsset() {
+  return PIECE_TILE_ASSETS[Math.floor(Math.random() * PIECE_TILE_ASSETS.length)];
+}
+
+function applyTileAsset(element, asset) {
+  if (!asset || !PIECE_TILE_ASSETS.includes(asset)) {
+    return;
+  }
+
+  element.style.setProperty("--tile-image", `url("${asset}")`);
 }
 
 function updateMultiplierFromMove(linesCleared) {
@@ -864,7 +901,7 @@ function beginDrag(event, pieceId) {
   }
 
   const sourceEl = event.currentTarget;
-  const proxy = buildProxy(piece.shape);
+  const proxy = buildProxy(piece);
   const proxyWidth = piece.shape[0].length * 24 + (piece.shape[0].length - 1) * 4;
   const proxyHeight = piece.shape.length * 24 + (piece.shape.length - 1) * 4;
   dragState = {
@@ -895,8 +932,9 @@ function beginDrag(event, pieceId) {
   sourceEl.addEventListener("pointercancel", onPointerUp);
 }
 
-function buildProxy(shape) {
+function buildProxy(piece) {
   const proxy = document.createElement("div");
+  const { shape, tiles } = piece;
   proxy.className = "drag-proxy";
   proxy.style.gridTemplateColumns = `repeat(${shape[0].length}, 24px)`;
   proxy.style.gridTemplateRows = `repeat(${shape.length}, 24px)`;
@@ -905,6 +943,9 @@ function buildProxy(shape) {
     for (let col = 0; col < shape[0].length; col += 1) {
       const cell = document.createElement("div");
       cell.className = `piece-cell ${shape[row][col] ? "on" : "off"}`;
+      if (shape[row][col]) {
+        applyTileAsset(cell, tiles?.[row]?.[col]);
+      }
       proxy.appendChild(cell);
     }
   }
@@ -1161,7 +1202,7 @@ async function applyPlacement(pieceId, row, col) {
           continue;
         }
 
-        board[row + y][col + x] = 1;
+        board[row + y][col + x] = piece.tiles?.[y]?.[x] || getRandomTileAsset();
         filledCells += 1;
         placedCoords.push({ row: row + y, col: col + x });
       }
