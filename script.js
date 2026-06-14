@@ -508,10 +508,12 @@ function refillTray() {
 
 function createFairTray() {
   const maxAttempts = 90;
+  const desiredPlayablePieces = 2;
   let fallbackTray = Array.from({ length: 3 }, () => ({
     id: createPieceId(),
     shape: getRandomShape()
   }));
+  let fallbackPlayableCount = countPlayablePieces(fallbackTray);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const candidateTray = Array.from({ length: 3 }, () => ({
@@ -519,35 +521,48 @@ function createFairTray() {
       shape: getRandomShape()
     }));
     const hasSmallPiece = candidateTray.some((piece) => countShapeCells(piece.shape) <= 3);
-    const hasPlayablePiece = candidateTray.some((piece) => canFitAnywhere(piece.shape));
+    const playableCount = countPlayablePieces(candidateTray);
 
-    if (hasSmallPiece && hasPlayablePiece) {
+    if (hasSmallPiece && playableCount >= desiredPlayablePieces) {
       return candidateTray;
     }
 
-    fallbackTray = candidateTray;
+    if (playableCount > fallbackPlayableCount) {
+      fallbackTray = candidateTray;
+      fallbackPlayableCount = playableCount;
+    }
   }
 
-  const emergencyPiece = createEmergencyPiece();
-  if (emergencyPiece) {
-    fallbackTray[0] = emergencyPiece;
+  const emergencyPieces = createPlayablePieces(desiredPlayablePieces);
+  if (emergencyPieces.length > 0) {
+    emergencyPieces.forEach((piece, index) => {
+      fallbackTray[index] = piece;
+    });
   }
+
   return fallbackTray;
 }
 
-function createEmergencyPiece() {
-  const easyShapes = [[[1, 1]], [[1], [1]], [[1, 1], [1, 1]], [[1, 1, 1]], [[0, 1], [1, 1]]];
+function countPlayablePieces(tray) {
+  return tray.filter((piece) => canFitAnywhere(piece.shape)).length;
+}
 
-  for (const shape of easyShapes) {
+function createPlayablePieces(amount) {
+  const piecesToAdd = [];
+
+  for (const shape of BASE_SHAPES) {
     const rotations = getUniqueRotations(shape);
     for (const rotated of rotations) {
       if (canFitAnywhere(rotated)) {
-        return { id: createPieceId(), shape: cloneShape(rotated) };
+        piecesToAdd.push({ id: createPieceId(), shape: cloneShape(rotated) });
+        if (piecesToAdd.length >= amount) {
+          return piecesToAdd;
+        }
       }
     }
   }
 
-  return null;
+  return piecesToAdd;
 }
 
 function updateMultiplierFromMove(linesCleared) {
