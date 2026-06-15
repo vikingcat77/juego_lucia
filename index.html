@@ -13,10 +13,12 @@
   <title>Gatitos y Cajitas</title>
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/app-icon-512.png">
-  <link rel="stylesheet" href="style.css?v=20260509-1">
+  <link rel="stylesheet" href="style.css?v=20260615-1">
 </head>
 <body>
   <main class="game-shell">
+    <h1 class="game-title">Tetris de Gatitos</h1>
+
     <section id="startScreen" class="intro-panel start-screen">
       <p class="eyebrow">Edicion Deluxe</p>
       <h1>Gatitos y Cajitas</h1>
@@ -63,47 +65,62 @@
     </section>
 
     <section class="board-panel">
-      <div class="game-hud">
-        <article class="hud-chip">
-          <span class="stat-label">Puntos</span>
-          <strong data-bind="score">0</strong>
-        </article>
-        <article class="hud-chip">
-          <span class="stat-label">Record</span>
-          <strong data-bind="bestScore">0</strong>
-        </article>
-        <article class="hud-chip">
-          <span class="stat-label">Racha</span>
-          <strong data-bind="streak">x1</strong>
-        </article>
-        <article class="hud-chip hud-chip-progress">
-          <span class="stat-label">Bonus visual</span>
-          <div class="hud-meter">
-            <span id="themeProgressBar"></span>
+      <div class="play-layout">
+        <div class="play-column">
+          <div id="board" class="board" aria-label="Tablero de juego"></div>
+          <div class="status-bar">
+            <p id="status" aria-live="polite">Coge una pieza para empezar.</p>
           </div>
-          <small id="themeProgressText">1000 para cambio</small>
-        </article>
-        <div class="hud-actions">
-          <button id="quickRestartButton" class="quick-restart" type="button">Reiniciar</button>
-          <button id="soundToggleButton" class="quick-restart sound-toggle" type="button" aria-pressed="true">Sonido ON</button>
+          <div id="tray" class="tray" aria-label="Piezas disponibles"></div>
+          <div class="hud-actions">
+            <button id="quickRestartButton" class="quick-restart" type="button">Reiniciar</button>
+            <button id="soundToggleButton" class="quick-restart sound-toggle" type="button" aria-pressed="true">Sonido ON</button>
+          </div>
         </div>
+
+        <aside class="side-panel" aria-label="Panel de partida">
+          <section class="side-widget next-widget" aria-label="Siguiente tanda">
+            <h2>Siguiente<br>tanda</h2>
+            <div class="next-preview" aria-hidden="true">
+              <span></span><span></span>
+              <span></span><span></span>
+            </div>
+          </section>
+
+          <section class="side-widget score-widget" aria-label="Puntuacion">
+            <h2>Puntuacion</h2>
+            <strong data-bind="score">0</strong>
+          </section>
+
+          <section class="side-widget level-widget" aria-label="Nivel">
+            <h2>Nivel</h2>
+            <strong data-bind="streak">x1</strong>
+          </section>
+
+          <section class="side-widget happiness-widget" aria-label="Medidor de felicidad">
+            <h2>Medidor de<br>felicidad</h2>
+            <div class="paw-meter">
+              <span aria-hidden="true">Paw</span>
+              <div class="hud-meter">
+                <span id="themeProgressBar"></span>
+              </div>
+            </div>
+            <small id="themeProgressText">1000 para cambio</small>
+          </section>
+
+          <section class="side-widget mission-strip" aria-label="Mision diaria">
+            <p class="stat-label">Mision</p>
+            <p data-bind="missionTitle">Cargando mision...</p>
+            <div class="hud-meter">
+              <span data-bind="missionProgressBar"></span>
+            </div>
+            <p data-bind="missionProgressText">0%</p>
+          </section>
+        </aside>
       </div>
-      <div id="board" class="board" aria-label="Tablero de juego"></div>
-      <div class="status-bar">
-        <p id="status" aria-live="polite">Coge una pieza para empezar.</p>
-      </div>
-      <div id="tray" class="tray" aria-label="Piezas disponibles"></div>
-      <section class="mission-strip" aria-label="Mision diaria">
-        <p class="stat-label">Mision</p>
-        <p data-bind="missionTitle">Cargando mision...</p>
-        <div class="hud-meter">
-          <span data-bind="missionProgressBar"></span>
-        </div>
-        <p data-bind="missionProgressText">0%</p>
-      </section>
     </section>
   </main>
 
-  <script src="script.js?v=20260509-1"></script>
+  <script src="script.js?v=20260615-1"></script>
 </body>
 </html>

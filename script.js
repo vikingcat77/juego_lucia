@@ -1,4 +1,6 @@
 const GRID_SIZE = 8;
+const PIECE_CELL_SIZE = 42;
+const PIECE_CELL_GAP = 4;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const LEADERBOARD_KEY = "juego_lucia_leaderboard";
 const PLAYER_NAME_KEY = "juego_lucia_player_name";
@@ -182,6 +184,7 @@ const PIECE_TILE_ASSETS = [
 
 const boardEl = document.getElementById("board");
 const trayEl = document.getElementById("tray");
+const nextPreviewEls = Array.from(document.querySelectorAll(".next-preview span"));
 const scoreEls = Array.from(document.querySelectorAll('[data-bind="score"]'));
 const bestScoreEls = Array.from(document.querySelectorAll('[data-bind="bestScore"]'));
 const streakEls = Array.from(document.querySelectorAll('[data-bind="streak"]'));
@@ -483,8 +486,8 @@ function createPieceElement(piece) {
 
   const grid = document.createElement("div");
   grid.className = "piece-grid";
-  grid.style.gridTemplateColumns = `repeat(${cols}, 24px)`;
-  grid.style.gridTemplateRows = `repeat(${rows}, 24px)`;
+  grid.style.gridTemplateColumns = `repeat(${cols}, ${PIECE_CELL_SIZE}px)`;
+  grid.style.gridTemplateRows = `repeat(${rows}, ${PIECE_CELL_SIZE}px)`;
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
@@ -511,6 +514,16 @@ function renderTray() {
   pieces.forEach((piece) => {
     trayEl.appendChild(createPieceElement(piece));
   });
+  updateNextPreview();
+}
+
+function updateNextPreview() {
+  if (nextPreviewEls.length === 0) {
+    return;
+  }
+
+  const previewAsset = pieces.find((piece) => piece.tiles?.flat().find(Boolean))?.tiles.flat().find(Boolean) || PIECE_TILE_ASSETS[0];
+  nextPreviewEls.forEach((cell) => applyTileAsset(cell, previewAsset));
 }
 
 function refillTray() {
@@ -903,8 +916,8 @@ function beginDrag(event, pieceId) {
 
   const sourceEl = event.currentTarget;
   const proxy = buildProxy(piece);
-  const proxyWidth = piece.shape[0].length * 24 + (piece.shape[0].length - 1) * 4;
-  const proxyHeight = piece.shape.length * 24 + (piece.shape.length - 1) * 4;
+  const proxyWidth = piece.shape[0].length * PIECE_CELL_SIZE + (piece.shape[0].length - 1) * PIECE_CELL_GAP;
+  const proxyHeight = piece.shape.length * PIECE_CELL_SIZE + (piece.shape.length - 1) * PIECE_CELL_GAP;
   dragState = {
     piece,
     sourceEl,
@@ -937,8 +950,8 @@ function buildProxy(piece) {
   const proxy = document.createElement("div");
   const { shape, tiles } = piece;
   proxy.className = "drag-proxy";
-  proxy.style.gridTemplateColumns = `repeat(${shape[0].length}, 24px)`;
-  proxy.style.gridTemplateRows = `repeat(${shape.length}, 24px)`;
+  proxy.style.gridTemplateColumns = `repeat(${shape[0].length}, ${PIECE_CELL_SIZE}px)`;
+  proxy.style.gridTemplateRows = `repeat(${shape.length}, ${PIECE_CELL_SIZE}px)`;
 
   for (let row = 0; row < shape.length; row += 1) {
     for (let col = 0; col < shape[0].length; col += 1) {
