@@ -165,19 +165,19 @@ const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
     : 1
 ));
 const PIECE_TILE_ASSETS = [
-  "assets/pieces/cat-orange.png",
-  "assets/pieces/cat-siamese.png",
-  "assets/pieces/cat-gray.png",
-  "assets/pieces/cat-black.png",
-  "assets/pieces/cat-calico.png",
-  "assets/pieces/cat-white.png",
-  "assets/pieces/yarn-pink.png",
-  "assets/pieces/yarn-green.png",
-  "assets/pieces/yarn-yellow.png",
-  "assets/pieces/yarn-red.png",
-  "assets/pieces/yarn-blue.png",
-  "assets/pieces/yarn-purple.png",
-  "assets/pieces/yarn-orange.png"
+  "assets/pieces/cat-orange.svg",
+  "assets/pieces/cat-siamese.svg",
+  "assets/pieces/cat-gray.svg",
+  "assets/pieces/cat-black.svg",
+  "assets/pieces/cat-calico.svg",
+  "assets/pieces/cat-white.svg",
+  "assets/pieces/yarn-pink.svg",
+  "assets/pieces/yarn-green.svg",
+  "assets/pieces/yarn-yellow.svg",
+  "assets/pieces/yarn-red.svg",
+  "assets/pieces/yarn-blue.svg",
+  "assets/pieces/yarn-purple.svg",
+  "assets/pieces/yarn-orange.svg"
 ];
 
 const boardEl = document.getElementById("board");
@@ -528,11 +528,12 @@ function refillTray() {
 function createFairTray() {
   const maxAttempts = 90;
   const desiredPlayablePieces = 2;
-  let fallbackTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
+  const trayTileAsset = getRandomTileAsset();
+  let fallbackTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape(), trayTileAsset));
   let fallbackPlayableCount = countPlayablePieces(fallbackTray);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const candidateTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
+    const candidateTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape(), trayTileAsset));
     const hasSmallPiece = candidateTray.some((piece) => countShapeCells(piece.shape) <= 3);
     const playableCount = countPlayablePieces(candidateTray);
 
@@ -546,7 +547,7 @@ function createFairTray() {
     }
   }
 
-  const emergencyPieces = createPlayablePieces(desiredPlayablePieces);
+  const emergencyPieces = createPlayablePieces(desiredPlayablePieces, trayTileAsset);
   if (emergencyPieces.length > 0) {
     emergencyPieces.forEach((piece, index) => {
       fallbackTray[index] = piece;
@@ -560,14 +561,14 @@ function countPlayablePieces(tray) {
   return tray.filter((piece) => canFitAnywhere(piece.shape)).length;
 }
 
-function createPlayablePieces(amount) {
+function createPlayablePieces(amount, tileAsset) {
   const piecesToAdd = [];
 
   for (const shape of BASE_SHAPES) {
     const rotations = getUniqueRotations(shape);
     for (const rotated of rotations) {
       if (canFitAnywhere(rotated)) {
-        piecesToAdd.push(createGamePiece(cloneShape(rotated)));
+        piecesToAdd.push(createGamePiece(cloneShape(rotated), tileAsset));
         if (piecesToAdd.length >= amount) {
           return piecesToAdd;
         }
@@ -578,16 +579,16 @@ function createPlayablePieces(amount) {
   return piecesToAdd;
 }
 
-function createGamePiece(shape) {
+function createGamePiece(shape, tileAsset = getRandomTileAsset()) {
   return {
     id: createPieceId(),
     shape,
-    tiles: createTileMatrix(shape)
+    tiles: createTileMatrix(shape, tileAsset)
   };
 }
 
-function createTileMatrix(shape) {
-  return shape.map((row) => row.map((cell) => (cell ? getRandomTileAsset() : "")));
+function createTileMatrix(shape, tileAsset) {
+  return shape.map((row) => row.map((cell) => (cell ? tileAsset : "")));
 }
 
 function getRandomTileAsset() {
