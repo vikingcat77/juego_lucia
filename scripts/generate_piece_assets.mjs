@@ -70,6 +70,17 @@ const yarnPalettes = {
   "yarn-orange": { body: "#ff8a1f", bodyDark: "#b84d10", bodyLight: "#ffc166" }
 };
 
+const blastPalettes = {
+  "blast-orange": { top: "#ffca3a", body: "#ff7a1a", dark: "#c9480c", glow: "#fff2a8" },
+  "blast-red": { top: "#ff5d67", body: "#e82d3f", dark: "#a60f25", glow: "#ffc1c7" },
+  "blast-blue": { top: "#5ee8ff", body: "#1288ff", dark: "#0751b5", glow: "#c9f8ff" },
+  "blast-cyan": { top: "#53ffe8", body: "#18c7d6", dark: "#087b91", glow: "#c7fff8" },
+  "blast-green": { top: "#b9ff4a", body: "#47d33d", dark: "#1d8d23", glow: "#e6ffc5" },
+  "blast-purple": { top: "#e36bff", body: "#9b45f2", dark: "#5d24b8", glow: "#f3c6ff" },
+  "blast-pink": { top: "#ff7edb", body: "#f244a4", dark: "#ab1d71", glow: "#ffd0ee" },
+  "blast-yellow": { top: "#fff35a", body: "#f4b525", dark: "#b36d08", glow: "#fffbd0" }
+};
+
 function tileShell(inner, { shadow = "#7c3f18" } = {}) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
   <defs>
@@ -148,6 +159,36 @@ function yarnSvg(_name, p) {
   `, { shadow: p.bodyDark });
 }
 
+function blastSvg(_name, p) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="block" x1="18" y1="12" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="${p.top}"/>
+      <stop offset=".48" stop-color="${p.body}"/>
+      <stop offset="1" stop-color="${p.dark}"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="26" y1="18" x2="86" y2="72" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff" stop-opacity=".78"/>
+      <stop offset=".42" stop-color="${p.glow}" stop-opacity=".38"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-18%" y="-18%" width="136%" height="140%">
+      <feDropShadow dx="0" dy="7" stdDeviation="3" flood-color="${p.dark}" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="10" y="9" width="108" height="108" rx="21" fill="url(#block)"/>
+    <path d="M16 78c12 16 29 25 50 26 20 1 35-5 47-18v11c0 9-7 16-16 16H31c-9 0-16-7-16-16z" fill="${p.dark}" opacity=".26"/>
+    <path d="M27 18h70c8 0 14 6 14 14v8c-18 8-38 11-60 8-17-2-29-7-38-13v-3c0-8 6-14 14-14z" fill="url(#shine)"/>
+    <rect x="18" y="17" width="92" height="92" rx="17" fill="none" stroke="#fff" stroke-opacity=".42" stroke-width="5"/>
+    <rect x="13" y="12" width="102" height="102" rx="19" fill="none" stroke="${p.dark}" stroke-opacity=".56" stroke-width="5"/>
+    <path d="M36 82 48 58l12 24 25-38 11 34" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="36" cy="34" r="7" fill="#fff" opacity=".52"/>
+    <circle cx="50" cy="29" r="3" fill="#fff" opacity=".58"/>
+  </g>
+</svg>`;
+}
+
 await mkdir(outDir, { recursive: true });
 
 for (const [name, palette] of Object.entries(catPalettes)) {
@@ -156,4 +197,8 @@ for (const [name, palette] of Object.entries(catPalettes)) {
 
 for (const [name, palette] of Object.entries(yarnPalettes)) {
   await writeFile(new URL(`${name}.svg`, outDir), yarnSvg(name, palette));
+}
+
+for (const [name, palette] of Object.entries(blastPalettes)) {
+  await writeFile(new URL(`${name}.svg`, outDir), blastSvg(name, palette));
 }

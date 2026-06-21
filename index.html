@@ -6,18 +6,24 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'none'; form-action 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=()">
-  <meta name="theme-color" content="#34d5b6">
+  <meta name="theme-color" content="#1556d8">
   <meta name="apple-mobile-web-app-title" content="Gatitos">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>Gatitos y Cajitas</title>
   <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/app-icon-512.png">
-  <link rel="stylesheet" href="style.css?v=20260615-1">
+  <link rel="stylesheet" href="style.css?v=20260621-1">
 </head>
 <body>
   <main class="game-shell">
-    <h1 class="game-title">Tetris de Gatitos</h1>
+    <h1 class="game-title" aria-label="Block Blast Adventure Gatitos">
+      <span class="logo-word">
+        <span>B</span><span>L</span><span>O</span><span>C</span><span>K</span>
+      </span>
+      <span class="logo-word logo-word-blast">BLAST</span>
+      <small>Adventure Gatitos</small>
+    </h1>
 
     <section id="startScreen" class="intro-panel start-screen">
       <p class="eyebrow">Edicion Deluxe</p>
@@ -80,7 +86,7 @@
 
         <aside class="side-panel" aria-label="Panel de partida">
           <section class="side-widget next-widget" aria-label="Siguiente tanda">
-            <h2>Siguiente<br>tanda</h2>
+            <h2>Próxima<br>pieza</h2>
             <div class="next-preview" aria-hidden="true">
               <span></span><span></span>
               <span></span><span></span>
@@ -88,17 +94,17 @@
           </section>
 
           <section class="side-widget score-widget" aria-label="Puntuacion">
-            <h2>Puntuacion</h2>
+            <h2>Puntos</h2>
             <strong data-bind="score">0</strong>
           </section>
 
           <section class="side-widget level-widget" aria-label="Nivel">
             <h2>Nivel</h2>
-            <strong data-bind="streak">x1</strong>
+            <strong data-bind="level">1</strong>
           </section>
 
           <section class="side-widget happiness-widget" aria-label="Medidor de felicidad">
-            <h2>Medidor de<br>felicidad</h2>
+            <h2>Objetivo<br>aventura</h2>
             <div class="paw-meter">
               <span aria-hidden="true">Paw</span>
               <div class="hud-meter">
@@ -121,6 +127,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=20260615-1"></script>
+  <script src="script.js?v=20260621-1"></script>
 </body>
 </html>

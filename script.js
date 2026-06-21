@@ -1,5 +1,5 @@
 const GRID_SIZE = 8;
-const PIECE_CELL_SIZE = 42;
+const PIECE_CELL_SIZE = 48;
 const PIECE_CELL_GAP = 4;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const LEADERBOARD_KEY = "juego_lucia_leaderboard";
@@ -167,19 +167,14 @@ const SHAPE_WEIGHTS = BASE_SHAPES.map((shape) => (
     : 1
 ));
 const PIECE_TILE_ASSETS = [
-  "assets/pieces/cat-orange.svg",
-  "assets/pieces/cat-siamese.svg",
-  "assets/pieces/cat-gray.svg",
-  "assets/pieces/cat-black.svg",
-  "assets/pieces/cat-calico.svg",
-  "assets/pieces/cat-white.svg",
-  "assets/pieces/yarn-pink.svg",
-  "assets/pieces/yarn-green.svg",
-  "assets/pieces/yarn-yellow.svg",
-  "assets/pieces/yarn-red.svg",
-  "assets/pieces/yarn-blue.svg",
-  "assets/pieces/yarn-purple.svg",
-  "assets/pieces/yarn-orange.svg"
+  "assets/pieces/blast-orange.svg",
+  "assets/pieces/blast-red.svg",
+  "assets/pieces/blast-blue.svg",
+  "assets/pieces/blast-cyan.svg",
+  "assets/pieces/blast-green.svg",
+  "assets/pieces/blast-purple.svg",
+  "assets/pieces/blast-pink.svg",
+  "assets/pieces/blast-yellow.svg"
 ];
 
 const boardEl = document.getElementById("board");
@@ -188,6 +183,7 @@ const nextPreviewEls = Array.from(document.querySelectorAll(".next-preview span"
 const scoreEls = Array.from(document.querySelectorAll('[data-bind="score"]'));
 const bestScoreEls = Array.from(document.querySelectorAll('[data-bind="bestScore"]'));
 const streakEls = Array.from(document.querySelectorAll('[data-bind="streak"]'));
+const levelEls = Array.from(document.querySelectorAll('[data-bind="level"]'));
 const lastScoreEls = Array.from(document.querySelectorAll('[data-bind="lastScore"]'));
 const missionTitleEls = Array.from(document.querySelectorAll('[data-bind="missionTitle"]'));
 const missionProgressTextEls = Array.from(document.querySelectorAll('[data-bind="missionProgressText"]'));
@@ -541,12 +537,11 @@ function refillTray() {
 function createFairTray() {
   const maxAttempts = 90;
   const desiredPlayablePieces = 2;
-  const trayTileAsset = getRandomTileAsset();
-  let fallbackTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape(), trayTileAsset));
+  let fallbackTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
   let fallbackPlayableCount = countPlayablePieces(fallbackTray);
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const candidateTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape(), trayTileAsset));
+    const candidateTray = Array.from({ length: 3 }, () => createGamePiece(getRandomShape()));
     const hasSmallPiece = candidateTray.some((piece) => countShapeCells(piece.shape) <= 3);
     const playableCount = countPlayablePieces(candidateTray);
 
@@ -560,7 +555,7 @@ function createFairTray() {
     }
   }
 
-  const emergencyPieces = createPlayablePieces(desiredPlayablePieces, trayTileAsset);
+  const emergencyPieces = createPlayablePieces(desiredPlayablePieces);
   if (emergencyPieces.length > 0) {
     emergencyPieces.forEach((piece, index) => {
       fallbackTray[index] = piece;
@@ -574,14 +569,14 @@ function countPlayablePieces(tray) {
   return tray.filter((piece) => canFitAnywhere(piece.shape)).length;
 }
 
-function createPlayablePieces(amount, tileAsset) {
+function createPlayablePieces(amount) {
   const piecesToAdd = [];
 
   for (const shape of BASE_SHAPES) {
     const rotations = getUniqueRotations(shape);
     for (const rotated of rotations) {
       if (canFitAnywhere(rotated)) {
-        piecesToAdd.push(createGamePiece(cloneShape(rotated), tileAsset));
+        piecesToAdd.push(createGamePiece(cloneShape(rotated)));
         if (piecesToAdd.length >= amount) {
           return piecesToAdd;
         }
@@ -661,6 +656,7 @@ function syncScoreDisplays() {
   const scoreText = String(score);
   const bestText = String(bestScore);
   const streakText = `x${scoreMultiplier.toFixed(scoreMultiplier >= 2 ? 1 : 2).replace(/\.0$/, "")}`;
+  const levelText = String(getAdventureLevel());
   const lastText = String(lastScore);
   scoreEls.forEach((el) => {
     el.textContent = scoreText;
@@ -674,11 +670,19 @@ function syncScoreDisplays() {
     el.textContent = streakText;
     pulseLiveNumber(el, streakText);
   });
+  levelEls.forEach((el) => {
+    el.textContent = levelText;
+    pulseLiveNumber(el, levelText);
+  });
   lastScoreEls.forEach((el) => {
     el.textContent = lastText;
   });
   syncThemeProgressDisplay();
   document.title = `Gatitos y Cajitas - ${score} pts`;
+}
+
+function getAdventureLevel() {
+  return Math.max(1, Math.floor(score / 750) + 1);
 }
 
 function pulseLiveNumber(el, valueText) {
