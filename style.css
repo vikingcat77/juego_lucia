@@ -21,7 +21,8 @@
   --board-span: clamp(390px, 38vw, 560px);
   --gap: 0px;
   --cell: calc((var(--board-span) - (var(--grid-size) - 1) * var(--gap)) / var(--grid-size));
-  --piece-cell-size: 42px;
+  --piece-cell-size: 38px;
+  --piece-cell-gap: 2px;
   --board-line: rgba(92, 64, 35, 0.28);
   --block-highlight: rgba(255, 255, 255, 0.36);
   --block-shadow: rgba(65, 35, 12, 0.3);
@@ -539,7 +540,7 @@ body:not(.playing) .quick-restart {
 
 .piece-grid {
   display: grid;
-  gap: 3px;
+  gap: var(--piece-cell-gap);
 }
 
 .piece-badge {
@@ -596,7 +597,7 @@ body:not(.playing) .quick-restart {
   top: 0;
   left: 0;
   display: grid;
-  gap: 3px;
+  gap: var(--piece-cell-gap);
   pointer-events: none;
   z-index: 90;
   transform: translate(-9999px, -9999px);
@@ -1101,12 +1102,12 @@ body.playing {
 }
 
 .tray {
-  width: min(760px, 100%);
-  gap: clamp(0.7rem, 1.1vw, 1rem);
+  width: min(650px, 100%);
+  gap: clamp(0.45rem, 0.8vw, 0.7rem);
 }
 
 .piece {
-  min-height: clamp(126px, 13vh, 176px);
+  min-height: clamp(104px, 11vh, 138px);
   border: 5px solid #fff8eb;
   border-radius: 22px;
   background:
@@ -1120,7 +1121,7 @@ body.playing {
 
 .piece-grid,
 .drag-proxy {
-  gap: 4px;
+  gap: var(--piece-cell-gap);
 }
 
 .piece-cell {
@@ -1906,7 +1907,8 @@ button,
 :root {
   --bg-manga: none;
   --board-span: clamp(340px, 32vw, 490px);
-  --piece-cell-size: 48px;
+  --piece-cell-size: 38px;
+  --piece-cell-gap: 2px;
   --blast-blue-900: #062176;
   --blast-blue-700: #0d4cd5;
   --blast-cyan: #42e9ff;
@@ -2045,10 +2047,20 @@ body::after {
 }
 
 .piece {
-  min-height: clamp(140px, 15vh, 190px);
+  min-height: clamp(108px, 11vh, 140px);
   border: 4px solid rgba(160, 226, 255, 0.85);
   background: linear-gradient(180deg, rgba(30, 129, 255, 0.72), rgba(6, 38, 151, 0.84));
   box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.28), 0 6px 0 #03175e, 0 18px 28px rgba(0, 8, 54, 0.34);
+}
+
+.piece-blocked {
+  cursor: not-allowed;
+  opacity: 0.48;
+  filter: saturate(0.7);
+}
+
+.piece-blocked:hover {
+  transform: none;
 }
 
 .piece-badge {
@@ -2100,7 +2112,11 @@ button,
 }
 
 .board-panel .hud-actions {
-  display: none;
+  display: grid;
+  width: min(520px, 100%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0;
 }
 
 .happiness-widget small {
@@ -2115,7 +2131,8 @@ button,
 @media (max-width: 640px) {
   :root {
     --board-span: clamp(284px, calc(100vw - 4rem), 320px);
-    --piece-cell-size: 32px;
+    --piece-cell-size: 30px;
+    --piece-cell-gap: 1px;
   }
 
   .logo-word {
@@ -2127,12 +2144,12 @@ button,
   }
 
   .tray {
-    width: min(100%, 360px);
-    gap: 0.42rem;
+    width: min(100%, 332px);
+    gap: 0.28rem;
   }
 
   .piece {
-    min-height: 116px;
+    min-height: 92px;
   }
 
   .piece-grid {

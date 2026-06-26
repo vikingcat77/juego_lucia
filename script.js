@@ -1,6 +1,6 @@
 const GRID_SIZE = 8;
-const PIECE_CELL_SIZE = 48;
-const PIECE_CELL_GAP = 4;
+const DEFAULT_PIECE_CELL_SIZE = 38;
+const DEFAULT_PIECE_CELL_GAP = 2;
 const BEST_SCORE_KEY = "juego_lucia_best_score";
 const LEADERBOARD_KEY = "juego_lucia_leaderboard";
 const PLAYER_NAME_KEY = "juego_lucia_player_name";
@@ -479,11 +479,12 @@ function createPieceElement(piece) {
   pieceEl.className = "piece";
   pieceEl.dataset.id = piece.id;
   pieceEl.dataset.blocks = String(blockCount);
+  updatePieceAvailability(pieceEl, piece);
 
   const grid = document.createElement("div");
   grid.className = "piece-grid";
-  grid.style.gridTemplateColumns = `repeat(${cols}, ${PIECE_CELL_SIZE}px)`;
-  grid.style.gridTemplateRows = `repeat(${rows}, ${PIECE_CELL_SIZE}px)`;
+  grid.style.gridTemplateColumns = `repeat(${cols}, var(--piece-cell-size))`;
+  grid.style.gridTemplateRows = `repeat(${rows}, var(--piece-cell-size))`;
 
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < cols; col += 1) {
@@ -511,6 +512,29 @@ function renderTray() {
     trayEl.appendChild(createPieceElement(piece));
   });
   updateNextPreview();
+  syncTrayAvailability();
+}
+
+function syncTrayAvailability() {
+  pieces.forEach((piece) => {
+    const pieceEl = trayEl.querySelector(`[data-id="${piece.id}"]`);
+    if (pieceEl) {
+      updatePieceAvailability(pieceEl, piece);
+    }
+  });
+}
+
+function updatePieceAvailability(pieceEl, piece) {
+  const isPlayableNow = canFitAnywhere(piece.shape);
+  pieceEl.classList.toggle("piece-blocked", !isPlayableNow);
+  if (isPlayableNow) {
+    pieceEl.removeAttribute("aria-disabled");
+    pieceEl.removeAttribute("title");
+    return;
+  }
+
+  pieceEl.setAttribute("aria-disabled", "true");
+  pieceEl.title = "Esta pieza no cabe ahora.";
 }
 
 function updateNextPreview() {
@@ -843,10 +867,11 @@ function showScoreModal(finalScore) {
   input.inputMode = "text";
   actions.className = "score-modal-actions";
   submit.type = "submit";
-  submit.textContent = qualifies ? "Guardar" : "Cerrar";
+  submit.textContent = qualifies ? "Guardar" : "Jugar otra vez";
   restart.className = "score-modal-restart";
   restart.type = "button";
-  restart.textContent = "Reiniciar";
+  restart.textContent = qualifies ? "Jugar otra vez" : "Ver tablero";
+  restart.dataset.action = qualifies ? "restart" : "review";
   fields.append(label, input);
   actions.append(submit, restart);
   card.append(eyebrow, title, points, list, fields, actions);
@@ -867,7 +892,7 @@ function showScoreModal(finalScore) {
   modal.addEventListener("submit", (event) => {
     event.preventDefault();
     if (!qualifies || savedScore) {
-      modal.remove();
+      closeScoreModal(modal, { restart: true });
       return;
     }
 
@@ -877,13 +902,14 @@ function showScoreModal(finalScore) {
     saveLeaderboard([...loadLeaderboard(), { name, score: finalScore }]);
     renderLeaderboardIntoList(list, loadLeaderboard());
     fields.hidden = true;
-    submit.textContent = "Cerrar";
+    submit.textContent = "Jugar otra vez";
+    restart.textContent = "Ver tablero";
+    restart.dataset.action = "review";
     setStatus("Puntuacion guardada en el top 10.");
   });
 
   restart.addEventListener("click", () => {
-    modal.remove();
-    startGame();
+    closeScoreModal(modal, { restart: restart.dataset.action !== "review" });
   });
 
   boardPanelEl.appendChild(modal);
@@ -891,6 +917,16 @@ function showScoreModal(finalScore) {
     input.focus();
     input.select();
   }
+}
+
+function closeScoreModal(modal, { restart = false } = {}) {
+  modal.remove();
+  if (restart) {
+    startGame();
+    return;
+  }
+
+  setStatus("Partida terminada. Pulsa Nueva partida para volver a jugar.");
 }
 
 function setStatus(message) {
@@ -918,10 +954,17 @@ function beginDrag(event, pieceId) {
     return;
   }
 
+  if (!canFitAnywhere(piece.shape)) {
+    setStatus("Esa pieza no cabe ahora. Prueba primero con otra.");
+    playInvalidDropSound();
+    return;
+  }
+
   const sourceEl = event.currentTarget;
   const proxy = buildProxy(piece);
-  const proxyWidth = piece.shape[0].length * PIECE_CELL_SIZE + (piece.shape[0].length - 1) * PIECE_CELL_GAP;
-  const proxyHeight = piece.shape.length * PIECE_CELL_SIZE + (piece.shape.length - 1) * PIECE_CELL_GAP;
+  const pieceMetrics = getPieceMetrics();
+  const proxyWidth = getPiecePixelSpan(piece.shape[0].length, pieceMetrics);
+  const proxyHeight = getPiecePixelSpan(piece.shape.length, pieceMetrics);
   dragState = {
     piece,
     sourceEl,
@@ -954,8 +997,8 @@ function buildProxy(piece) {
   const proxy = document.createElement("div");
   const { shape, tiles } = piece;
   proxy.className = "drag-proxy";
-  proxy.style.gridTemplateColumns = `repeat(${shape[0].length}, ${PIECE_CELL_SIZE}px)`;
-  proxy.style.gridTemplateRows = `repeat(${shape.length}, ${PIECE_CELL_SIZE}px)`;
+  proxy.style.gridTemplateColumns = `repeat(${shape[0].length}, var(--piece-cell-size))`;
+  proxy.style.gridTemplateRows = `repeat(${shape.length}, var(--piece-cell-size))`;
 
   for (let row = 0; row < shape.length; row += 1) {
     for (let col = 0; col < shape[0].length; col += 1) {
@@ -969,6 +1012,23 @@ function buildProxy(piece) {
   }
 
   return proxy;
+}
+
+function getPieceMetrics() {
+  return {
+    cellSize: readCssPixelValue("--piece-cell-size", DEFAULT_PIECE_CELL_SIZE),
+    gap: readCssPixelValue("--piece-cell-gap", DEFAULT_PIECE_CELL_GAP)
+  };
+}
+
+function readCssPixelValue(propertyName, fallback) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(propertyName);
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function getPiecePixelSpan(cellCount, metrics = getPieceMetrics()) {
+  return cellCount * metrics.cellSize + Math.max(0, cellCount - 1) * metrics.gap;
 }
 
 function onPointerMove(event) {
@@ -1238,6 +1298,7 @@ async function applyPlacement(pieceId, row, col) {
       await playLineClearFallEffect(completedLines);
       clearCompletedLines(completedLines);
       renderBoard();
+      syncTrayAvailability();
     }
 
     updateMultiplierFromMove(linesCleared);
